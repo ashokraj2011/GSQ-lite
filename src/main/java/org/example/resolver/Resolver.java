@@ -8,28 +8,30 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Interface for GraphQL data resolvers
+ * Interface for all data resolvers that can fetch data from various sources
  */
 public interface Resolver {
+    
     /**
-     * Check if this resolver can handle the given data source
+     * Determines if this resolver can handle the given data source
      */
     boolean canResolve(DataSourceInfo dataSourceInfo);
     
     /**
-     * Get a data fetcher for the specified type and field
+     * Returns a GraphQL DataFetcher for the specified type and field
      */
     DataFetcher<?> getDataFetcher(String typeName, String fieldName);
     
     /**
-     * Resolve an object asynchronously
+     * Asynchronously resolves data based on environment, type, and arguments
      */
-    CompletableFuture<Map<String, Object>> resolveAsync(DataFetchingEnvironment environment, 
-                                                        String typeName, 
-                                                        Map<String, Object> arguments);
+    CompletableFuture<Map<String, Object>> resolveAsync(
+            DataFetchingEnvironment environment, 
+            String typeName,
+            Map<String, Object> arguments);
     
     /**
-     * Initialize the resolver with configuration
+     * Initializes the resolver with configuration
      */
     void initialize(Map<String, Object> config);
 }
