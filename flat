@@ -1,0 +1,211 @@
+package org.example;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.Iterator;
+public class JsonFlattenerTest {
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    public static void main(String[] args) throws Exception {
+        Map<String, String> tests = new LinkedHashMap<>();
+
+        tests.put("Flat Object", "{\n  \"a\": 1,\n  \"b\": \"hello\",\n  \"c\": true\n}");
+        tests.put("Nested Objects", "{\n  \"person\": {\n    \"name\": \"Alice\",\n    \"address\": {\n      \"street\": \"123 Main St\",\n      \"city\": \"Townsville\"\n    }\n  }\n}");
+        tests.put("Array of Primitives", "{\n  \"values\": [1, 2, 3, 4]\n}");
+        tests.put("Array of Objects w/ Nested Arrays", "{\n  \"orders\": [\n    {\n      \"id\": 1,\n      \"items\": [\n        { \"sku\": \"A100\", \"qty\": 2 },\n        { \"sku\": \"B200\", \"qty\": 1 }\n      ]\n    },\n    {\n      \"id\": 2,\n      \"items\": [\n        { \"sku\": \"C300\", \"qty\": 5 }\n      ]\n    }\n  ]\n}");
+        tests.put("Parallel Arrays", "{\n  \"colors\": [\"red\", \"green\"],\n  \"sizes\": [\"S\", \"M\"]\n}");
+        tests.put("Mixed Primitives & Objects in Array", "{\n  \"mixed\": [\n    { \"x\": 1 },\n    2,\n    { \"y\": 3 }\n  ]\n}");
+        tests.put("Null Values", "{\n  \"a\": null,\n  \"b\": { \"c\": null }\n}");
+        tests.put("Deep Nesting", "{\n  \"l1\": {\n    \"l2\": {\n      \"l3\": {\n        \"l4\": \"deep\"\n      }\n    }\n  }\n}");
+        tests.put("Empty JSON", "{}");
+        //tests.put("Root Primitive", "\"just a string\"");
+        tests.put("Root Array", "[ { \"x\": 1 }, { \"y\": 2 } ]");
+        tests.put("Array of Arrays", "{\n  \"matrix\": [ [1,2], [3,4] ]\n}");
+        tests.put("Empty Object & Empty Array", "{\n  \"a\": {},\n  \"b\": []\n}");
+        tests.put("Mixed Primitive + Null in Array", "{\n  \"vals\": [null, 42, \"foo\"]\n}");
+        tests.put("Deeply Nested Arrays", "{\n  \"a\": [1,2],\n  \"b\": [true,false],\n  \"c\": [\"x\",\"y\"]\n}");
+        tests.put("Array Containing Empty Objects", "{\n  \"things\": [{}, { \"k\": \"v\" }]\n}");
+        tests.put("Duplicate Leaf Keys", "{\n  \"p1\": { \"id\": 1 },\n  \"p2\": { \"id\": 2 }\n}");
+        tests.put("Numeric Object Keys", "{\n  \"123\": { \"456\": \"value\" }\n}");
+
+        for (var entry : tests.entrySet()) {
+            System.out.println("=== Test: " + entry.getKey() + " ===");
+            System.out.println("Input JSON:");
+            System.out.println(entry.getValue());
+            System.out.println("\nFlattened Relational Output:");
+            var rows = JsonFlattener.flatten(entry.getValue());
+            printRelational(rows);
+            System.out.println();
+        }
+    }
+
+    /**
+     * Prints a list of flat JSON rows as a table to stdout.
+     */
+    public static void printRelational(List<Map<String, Object>> rows) {
+        if (rows == null || rows.isEmpty()) {
+            System.out.println("(no data)");
+            return;
+        }
+        // Collect column names
+        LinkedHashSet<String> columnSet = new LinkedHashSet<>();
+        for (var row : rows) columnSet.addAll(row.keySet());
+        List<String> columns = new ArrayList<>(columnSet);
+
+        if (columns.isEmpty()) {
+            System.out.println("(no data)");
+            return;
+        }
+
+        Map<String, Integer> widths = new HashMap<>();
+        for (var col : columns) widths.put(col, col.length());
+        for (var row : rows) {
+            for (var col : columns) {
+                String cell = Objects.toString(row.get(col), "");
+                widths.put(col, Math.max(widths.get(col), cell.length()));
+            }
+        }
+
+        // Build printf format
+        StringBuilder fmt = new StringBuilder();
+        for (var col : columns) {
+            fmt.append("%-").append(widths.get(col)).append("s | ");
+        }
+        fmt.setLength(fmt.length() - 3);
+        fmt.append("%n");
+
+        // Header
+        System.out.printf(fmt.toString(), columns.toArray());
+        for (var col : columns) {
+            System.out.print("-".repeat(widths.get(col)) + " | ");
+        }
+        System.out.println();
+
+        // Rows
+        for (var row : rows) {
+            Object[] cells = new Object[columns.size()];
+            for (int i = 0; i < columns.size(); i++) {
+                cells[i] = Objects.toString(row.get(columns.get(i)), "");
+            }
+            System.out.printf(fmt.toString(), (Object[]) cells);
+        }
+    }
+}
+
+
+
+package org.example;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
+import java.util.stream.StreamSupport;
+
+import static org.example.JsonFlattenerTest.printRelational;
+
+public class JsonFlattener {
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    /**
+     * Flatten the given JSON string into a list of maps (leaf-only) without special array handling.
+     */
+    public static List<Map<String, Object>> flatten(String json) throws IOException {
+        return flatten(json, false);
+    }
+
+    /**
+     * Flatten the given JSON string into a list of maps (leaf-only).
+     * @param keepPrimitiveArrays if true, arrays of primitives remain as List<Object> under one key
+     */
+    public static List<Map<String, Object>> flatten(String json,
+                                                    boolean keepPrimitiveArrays) throws IOException {
+        JsonNode root = MAPPER.readTree(json);
+        return flattenNode(root, null, keepPrimitiveArrays);
+    }
+
+    private static List<Map<String, Object>> flattenNode(JsonNode node,
+                                                         String key,
+                                                         boolean keepPrimitiveArrays) {
+        // Leaf node
+        if (node.isValueNode()) {
+            String col = (key == null) ? "value" : key;
+            Object val = node.isNumber()   ? node.numberValue()
+                    : node.isBoolean()  ? node.booleanValue()
+                    : node.asText();
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put(col, val);
+            return Collections.singletonList(m);
+        }
+
+        // Array
+        if (node.isArray()) {
+            // Optionally keep primitive arrays intact
+            if (keepPrimitiveArrays && node.size() > 0
+                    && StreamSupport.stream(node.spliterator(), false)
+                    .allMatch(JsonNode::isValueNode)) {
+                List<Object> vals = new ArrayList<>();
+                for (JsonNode elt : node) {
+                    if      (elt.isNumber())  vals.add(elt.numberValue());
+                    else if (elt.isBoolean()) vals.add(elt.booleanValue());
+                    else                      vals.add(elt.asText());
+                }
+                Map<String, Object> m = new LinkedHashMap<>();
+                m.put(key, vals);
+                return Collections.singletonList(m);
+            }
+            // Flatten each element
+            List<Map<String, Object>> rows = new ArrayList<>();
+            for (JsonNode elt : node) {
+                rows.addAll(flattenNode(elt, key, keepPrimitiveArrays));
+            }
+            return rows;
+        }
+
+        // Object
+        if (node.isObject()) {
+            List<Map<String, Object>> rows = new ArrayList<>();
+            rows.add(new LinkedHashMap<>());
+            for (Iterator<Map.Entry<String, JsonNode>> it = node.fields(); it.hasNext(); ) {
+                var field = it.next();
+                List<Map<String, Object>> childRows =
+                        flattenNode(field.getValue(), field.getKey(), keepPrimitiveArrays);
+                rows = merge(rows, childRows);
+            }
+            return rows;
+        }
+
+        // Fallback
+        return Collections.emptyList();
+    }
+
+    // Cartesian-product merge of two row-sets
+    private static List<Map<String, Object>> merge(List<Map<String, Object>> baseRows,
+                                                   List<Map<String, Object>> extraRows) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (var base : baseRows) {
+            for (var extra : extraRows) {
+                Map<String, Object> combined = new LinkedHashMap<>(base);
+                combined.putAll(extra);
+                out.add(combined);
+            }
+        }
+        return out;
+    }
+    // Example usage
+    public static void main(String[] args) throws IOException {
+        String INPUT_PATH = "src/main/resources/input.json";
+        String json = Files.readString(Path.of(INPUT_PATH));
+
+        // Flatten and print
+        List<Map<String, Object>> flat = flatten(json,true);
+        printRelational(flat);
+
+
+    }
+}
