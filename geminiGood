@@ -1,0 +1,47 @@
+flowchart TB
+    subgraph SURFACES["User Surfaces"]
+        VSC["VS Code Extension\n(Webviews, Explorer)"]
+        COPILOT["GitHub Copilot\n(/sf-* & /sflow-* Skills)"]
+        CLI_TERM["Terminal CLI\n(sflow / singularity-flow)"]
+    end
+
+    subgraph AUTH["Authentication & Secrets"]
+        KEYCHAIN["OS Keychain / GCM / SSH\n(Git Remote Operations)"]
+        SEC_STORE["VS Code SecretStorage\n(Jira PAT, Teams Webhooks)"]
+        GH_AUTH["GitHub CLI (gh)\n(PR & Review APIs)"]
+    end
+
+    subgraph RUNTIME["Singularity Flow Node.js Engine"]
+        DISPATCH["Command Dispatcher\n& CLI Runner"]
+        PROMPT_ENG["Prompt Composer\n& World Model Grounding"]
+        GOV["Governance Engine\n(Gates, Approvals, Quality Checks)"]
+    end
+
+    subgraph AI["AI Execution Layer"]
+        COPILOT_RUNNER["Copilot CLI / LLM Runner\n(Artifact & Code Generation)"]
+    end
+
+    subgraph STATE["Git Storage (Single Source of Truth)"]
+        WORK_BRANCH["Work Branches\n(singularity/work-items/*)"]
+        CONFIG_BRANCH["sflow/config Branch\n(capabilities.yml, workflow.yml)"]
+        LEDGER_BRANCH["state Branch\n(Tamper-evident Ledger)"]
+        LOCAL_GIT[".git/singularity-flow/\n(Session, Telemetry, Cache)"]
+    end
+
+    %% Interactions
+    VSC -->|"Secret Injection (Env)"| DISPATCH
+    SEC_STORE -.->|"Injected into child process"| DISPATCH
+    COPILOT -->|"SKILL.md Contract"| DISPATCH
+    CLI_TERM --> DISPATCH
+
+    DISPATCH --> PROMPT_ENG
+    PROMPT_ENG --> COPILOT_RUNNER
+    COPILOT_RUNNER -->|"Proposed Artifact"| GOV
+
+    GOV -->|"Deterministic Commit & Push"| WORK_BRANCH
+    GOV -->|"Record Events"| LEDGER_BRANCH
+    DISPATCH -->|"Local Session State"| LOCAL_GIT
+    DISPATCH -->|"Remote Map Authority"| CONFIG_BRANCH
+
+    KEYCHAIN -.->|"Auth"| STATE
+    GH_AUTH -.->|"Create PRs"| WORK_BRANCH
