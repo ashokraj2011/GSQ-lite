@@ -1,0 +1,1 @@
+git clone --no-local --no-tags --single-branch --depth 1 --no-checkout --branch sflow/config <the-lead-URL> %TEMP%\sflow-probe
