@@ -1,0 +1,33 @@
+Both exist at tip, verified from the help at 82fd8ef. Two steps: put the capability on the organisation's map, then create a workspace bound to it.
+
+1. Onboard (map) a capability. Authoring locally and publishing for review are separate on purpose:
+
+bash
+# See what's already governed
+singularity-flow capability tree --json
+singularity-flow capability inspect-repository https://git.example/payments.git --json   # read-only: is it mapped anywhere?
+
+# Governed publication — push the mapping as a review branch against sflow/config:
+singularity-flow capability map payments-core \
+  --lead https://git.example/org-lead.git \
+  --repository https://git.example/payments.git \
+  --name "Payments Core" --kind delivery --type business \
+  --parent payments --teams payments-eng \
+  --source-roots src --jira-project PAY
+
+--kind delivery requires at least one --repository (repeatable; --lead-repository picks which one holds governed state when there are several); a collection node takes none. The mapping goes up as a review branch against sflow/config — it never writes an application branch — so the organisation approves it like any other change. For purely local authoring in a checkout you already own, capability add <ID> --owns src/payments/** writes the checkout only; protect, depend, and auto add protections, contract dependencies, and auto-mode eligibility afterwards.
+
+2. Create a workspace on that capability. A workspace is the set of repositories you work across, cloned and initialised together:
+
+bash
+# Discover the capability ids the lead knows:
+singularity-flow workspace capabilities https://git.example/org-lead.git --json
+
+# Create the workspace from the map:
+singularity-flow workspace create --local --id pay-ws --name "Payments work" \
+  --organisation https://git.example/org-lead.git \
+  --capability payments-core --base ~/work --confirm pay-ws
+
+That resolves the capability's repositories from the map, clones them under ~/work/pay-ws (respecting the mapping's clone mode — full, blobless, or sparse), and initialises state. Useful variants: --dry-run to preview, --no-clone to register without cloning, the no-map form (--lead REPO --repository ID=URL) when no capability map exists yet, workspace prepare <LEAD-URL> --capability … for a single-step prepare, and — because clones over corporate networks fail — workspace bootstrap status|resume|retry <BOOTSTRAP-ID> to continue an interrupted creation instead of starting over. Later, workspace attach-capability ~/work/pay-ws payments-core-reporting --dry-run grows the workspace with bindings and clones kept consistent, and workspace doctor --network diagnoses it.
+
+From there you're in normal flow: cd ~/work/pay-ws/<repo> and singularity-flow start PAY-123 … — the story inherits the capability's rules, protections, and approvers from the map you just published.
