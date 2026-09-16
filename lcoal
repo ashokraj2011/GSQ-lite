@@ -1,0 +1,112 @@
+SingularityFlow — Complete Manual Walkthrough
+Clone a repository → create authority → describe the capability → create a workspace → run the first story
+
+Verified against main 82fd8ef (Sept 16, 2026). Windows cmd.exe syntax where it differs is shown in comments. Everything runs on your machine; no services.
+
+0. Prerequisites (once per machine)
+bash
+node --version          # 20 or newer
+git --version
+git config --global user.name  "Ashok Raj"
+git config --global user.email "ashok@example.com"
+
+# Install the CLI (from the singularityflow checkout, via Artifactory in corp):
+./install.sh            # or: npm install -g <artifactory package>
+singularity-flow --version
+1. Clone the repository (plain Git — nothing special)
+bash
+git clone https://git.example/payments.git C:\work\payments   # Windows path; ~/work/payments elsewhere
+cd C:\work\payments
+
+If the remote already carried governed state, plain singularity-flow onboard . would attach to it and you would skip step 2. For a new, never-governed repository, inspect-repository finds nothing (as you saw: Remote branch sflow/config not found) and step 2 creates the authority.
+
+2. Create the authority in this clone (no remote contact, works offline)
+bash
+singularity-flow onboard . --bootstrap --policy unmanaged-local-v1 --authority-local
+. is the local checkout path — there is no URL here by design.
+Creates the sflow/config branch inside this clone, pins it, writes a receipt.
+Verify:
+bash
+singularity-flow doctor --json
+git branch --list "sflow/*"
+
+To let a second person see the governed state later (optional now):
+
+bash
+git push origin sflow/config
+3. Describe the capability (what this repository is, what it owns)
+bash
+# The capability and what it owns:
+singularity-flow capability add payments-core --owns "src/**" --name "Payments Core" --team payments-eng
+
+# Protect what needs an owner's signature (example):
+singularity-flow capability protect src/auth/** --capability payments-core --approver security --reason "credential handling"
+
+# See the result:
+singularity-flow capability tree --json
+singularity-flow capability show payments-core --verbose
+
+add/protect author the checkout directly — right for a standalone pilot. (When an organisation lead exists, the governed route is capability map payments-core --lead <lead-url> --repository <this-repo-url> ..., which pushes a review branch against the lead's sflow/config; adopt later with capability adopt-managed --preview → --confirm sha256:<plan>.)
+
+4. Create a workspace (the set of repositories you work across)
+
+For a single-repository pilot with no capability map, use the no-map form:
+
+bash
+singularity-flow workspace create --local --id pay-ws --name "Payments work" ^
+  --lead https://git.example/payments.git ^
+  --repository payments=https://git.example/payments.git ^
+  --base C:\work --confirm pay-ws
+# (^ is cmd.exe line continuation; use \ on macOS/Linux)
+Registers the workspace under C:\work\pay-ws and clones what is missing (--no-clone to reuse the clone from step 1; --dry-run to preview).
+If a clone is interrupted on the corporate network: workspace bootstrap status, then workspace bootstrap resume <ID> --confirm pay-ws.
+Health: singularity-flow workspace doctor --network
+
+When an organisation map exists instead: workspace create --local --id pay-ws --organisation <lead-url> --capability payments-core --base C:\work --confirm pay-ws
+
+5. Start the first story
+bash
+cd C:\work\pay-ws\payments      # or your step-1 clone if you used --no-clone
+
+# Write the story (title + acceptance criteria), or point at Jira instead:
+# (cmd.exe: create story.yml in an editor; the heredoc below is bash)
+cat > story.yml <<'YML'
+title: Add request caching to the pricing service
+summary: Reduce repeated upstream calls
+acceptanceCriteria:
+  - Quotes for identical requests within 60s are served from cache
+  - Cache is bypassed when a request carries no-cache
+YML
+
+singularity-flow start PAY-101 --from-branch main --story-file story.yml --work-type quick-fix
+# Jira instead of a file:  singularity-flow start PAY-101 --jira --from-branch main --work-type quick-fix
+
+This creates the story branch and isolated working copy, and pins the rules, work-type and capability resolution for the whole story — later config edits stop the story rather than silently changing it.
+
+6. Work the story to publication
+bash
+singularity-flow status --json        # what is owed, what is met
+singularity-flow next                 # the one legal next action (it will guide every step below)
+
+singularity-flow prepare implement    # brief and templates for the phase
+# ... edit code in this working copy (or let Copilot draft via /sflow-work-interval) ...
+
+singularity-flow precheck             # what publish would say right now
+singularity-flow phase publish implement
+singularity-flow approve implement    # reviewer signs the exact version
+                                      # (self-approval is refused; use a second Git identity)
+
+singularity-flow explain <refusal-or-receipt-id>   # why anything happened, from records
+
+The one-minute proof at the end: edit any published file, run singularity-flow status — the approval shows expired, because a signature binds to exact bytes. That behavior is the product.
+
+Quick reference — the whole flow
+Step	Command
+Clone	git clone <url> <dir>
+Authority (new repo)	singularity-flow onboard . --bootstrap --policy unmanaged-local-v1 --authority-local
+Attach (governed repo)	singularity-flow onboard .
+Capability	capability add <id> --owns "src/**" · capability protect <path> --approver <group>
+Workspace	workspace create --local --id <ws> --lead <url> --repository <id>=<url> --base <dir> --confirm <ws>
+Story	start <ID> --from-branch main --story-file story.yml --work-type <type>
+Loop	next → prepare → edit → precheck → phase publish → approve
+Anytime	status --json · doctor --json · explain <id>
