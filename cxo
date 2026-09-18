@@ -1,0 +1,3 @@
+
+The AI understands our whole system
+ingularityFlow keeps an up-to-date map of each codebase — what it does, how the parts connect, who owns what — built automatically from the code, not written by hand. Every AI step is given the relevant slice of that map, so it works with our actual system instead of guessing, and we can see afterwards exactly what it was shown.
