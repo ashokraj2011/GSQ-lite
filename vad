@@ -1,0 +1,1 @@
+PATH="$(printf %s "$PATH" | tr ':' '\n' | grep '^/' | paste -sd: -)" singularity-flow plugin install
