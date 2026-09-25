@@ -1,0 +1,6 @@
+singularity-flow --build
+singularity-flow logs --level error --tail 10 --json
+$env:GIT_TERMINAL_PROMPT = '0'
+$env:GCM_INTERACTIVE = 'Never'
+gi
+  git fetch --dry-run --no-write-fetch-head origin '+refs/heads/*:refs/remotes/origin/*'
