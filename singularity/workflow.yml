@@ -211,12 +211,14 @@ ast:
     mode: background
     scope: configured-roots
   evidence:
-    mode: replayable
-    store: local-directory
+    mode: identified
   budgets:
     maxFiles: 500
     maxBytes: 20971520
     maxFileBytes: 2097152
+  generatedRoots: []
+  languages: {}
+  predicates: []
 models:
   defaultProvider: copilot-cli
   providers:
