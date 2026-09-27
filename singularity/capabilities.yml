@@ -1,0 +1,11 @@
+version: 1
+capabilities:
+  gql:
+    name: gql
+    kind: delivery
+    parent: null
+    repository: gsq-lite
+    jira:
+      projectKey: oay
+    teams:
+      - gteam
