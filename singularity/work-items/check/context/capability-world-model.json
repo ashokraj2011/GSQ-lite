@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "capabilityId": "gql",
+  "capabilityPath": [
+    "gql"
+  ],
+  "capabilityMapSha256": "f8fcbe542c18711b1b7b035b81df5426d5268bcc689f3387e3d6f4845beef289",
+  "requiredViews": [
+    "business",
+    "architecture",
+    "security",
+    "development",
+    "testing"
+  ],
+  "maxBytes": 262144,
+  "bytes": 0,
+  "repositories": [
+    {
+      "id": "gsq-lite",
+      "status": "local-grounding"
+    }
+  ],
+  "files": [],
+  "warnings": [
+    "Capability leases could not be read: Governed state at 'refs/remotes/origin/state' is unavailable; it was not treated as absent. Git could not list governed state at 'refs/remotes/origin/state'."
+  ],
+  "recordedAt": "2026-09-27T15:53:23.053Z"
+}

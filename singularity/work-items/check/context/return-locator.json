@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "kind": "return-locator",
+  "workId": "check",
+  "capabilityId": "gql",
+  "originRepositoryId": "gsq-lite",
+  "repositories": [
+    {
+      "id": "gsq-lite",
+      "remote": "origin",
+      "required": true,
+      "url": "https://github.com/ashokraj2011/GSQ-lite.git",
+      "fingerprint": "56ca1d5986b7d726ad8e1d4fa44bf7bd7f89426b8d9a6c2ecf3115b36f5a1420",
+      "portability": "portable"
+    }
+  ],
+  "lifecycleRef": "refs/heads/check",
+  "workBranchRef": "refs/heads/check",
+  "configuration": {
+    "sha256": "471e9a24f2e7d82eab60bc7f0290f942086f40b45ad1f1252858ad7210c99805",
+    "branch": "sflow/config",
+    "commit": "6f19bba432482fab0e1ee1240b8a2e78e391762d"
+  },
+  "cloneStrategy": "existing-or-clone",
+  "integritySha256": "88b8b9526e88eeb5240229b20007859fcf39b1aed194535c27c39510d6321381"
+}
