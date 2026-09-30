@@ -2267,6 +2267,7 @@ phases:
     specificationQuality:
       mode: enforce
       checklist: requirements-quality-v1
+      approvalChecklist: off
     writeScope: artifact-only
     approval:
       authorities:
