@@ -1,0 +1,3 @@
+Test-Path .\mvnw.cmd
+(Get-ChildItem .\target\surefire-reports -Filter 'TEST-*.xml' -ErrorAction SilentlyContinue | Measure-Object).Count
+singularity-flow logs --event command.failed --tail 5 --json
