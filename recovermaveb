@@ -1,0 +1,89 @@
+# Manually update `sflow/config` for a Maven test-policy issue
+
+This guide is for the office Windows laptop. It changes the approved configuration for **future Stories**. It does not alter an existing Story's pinned workflow or repair its current publication failure.
+
+## 1. Confirm what failed in the active Story
+
+In the affected Story repository, run this read-only command in PowerShell:
+
+```powershell
+singularity-flow logs --event command.failed --tail 5 --json
+```
+
+Inspect the latest publication failure's actual command, error, and stderr before changing configuration. The label `.-maven-tests` is the generated **check ID** for a Maven module at the repository root—not the executable. On Windows, SFlow infers `.\mvnw.cmd test` when `mvnw.cmd` exists; otherwise it infers `mvn test`. A manual `mvn test` pass does not prove that the publisher ran the same executable, working directory, environment, or fresh report check.
+
+If the failure is caused by the wrapper or the machine environment, repair that cause in the current Story checkout and recheck. Do not disable Git hooks, edit protected Story state, or rely on `--skip-checks` to bypass a required code test. A failed test preflight at generation 0 did not record publication; after the cause is resolved, a new reviewed publication attempt is possible.
+
+Copilot diagnostic: `/sf-doctor` can supplement the log, but preserve the exact `command.failed` details when reporting this issue.
+
+## 2. Update approved configuration only if it is genuinely wrong
+
+Use the **actual application/configuration authority repository URL**, not the SFlow framework repository and not the Story worktree. Open PowerShell in a folder outside all Story checkouts. Replace the URL below with that repository's URL, and use a new, empty local destination:
+
+```powershell
+$repoUrl = '<ACTUAL-REPOSITORY-URL>'
+git ls-remote --heads $repoUrl sflow/config
+git clone --single-branch --branch sflow/config $repoUrl sflow-config-edit
+Set-Location .\sflow-config-edit
+git status --short --branch
+```
+
+Stop if `sflow/config` is absent, the clone fails, or the checked-out branch is not `sflow/config`. Do not create a replacement branch from `main` as a workaround.
+
+Edit only the intended governed configuration file, usually `singularity/workflow.yml`:
+
+```powershell
+code .\singularity\workflow.yml
+singularity-flow configuration validate --json
+git diff --check
+git diff -- singularity/workflow.yml
+```
+
+Review the exact runner argv, working directory, result adapter/path, and affected module. Stop if validation fails or the diff contains unrelated changes.
+
+Shell validation: `singularity-flow configuration validate --json`  
+Copilot equivalent: `/sf-configuration validate`
+
+## 3. Publish the reviewed configuration change
+
+If your organisation allows a direct update to `sflow/config`, make a normal, non-force push:
+
+```powershell
+git add -- singularity/workflow.yml
+git commit -m "Correct Maven test policy"
+git push origin HEAD:sflow/config
+```
+
+If branch protection rejects the push, retain the commit and publish it as a review branch instead:
+
+```powershell
+git switch -c sflow/config-change/workflow/fix-maven-test
+git push -u origin HEAD
+```
+
+Open a pull request with **base `sflow/config`**, review it, and merge through the repository's normal process. Never force-push or merge this configuration change into the application branch merely to activate it.
+
+## 4. Refresh the registered workspace
+
+After `sflow/config` is updated or the PR is merged, preview the affected registered workspace and repository. Replace the IDs with their actual SFlow IDs:
+
+```powershell
+singularity-flow workspace refresh-configuration <WORKSPACE-ID> --repository <REPOSITORY-ID> --dry-run --json
+```
+
+Review the returned authority, changes, conflicts, and exact plan ID. If the plan is correct and requires application, run the same scope with its returned ID:
+
+```powershell
+singularity-flow workspace refresh-configuration <WORKSPACE-ID> --repository <REPOSITORY-ID> --confirm-plan <PLAN-ID> --json
+```
+
+Do not invent a plan ID or silently resolve a protected conflict.
+
+Shell: `singularity-flow workspace refresh-configuration`  
+Copilot: `/sf-refresh-configuration`
+
+## 5. Treat the already-started Story separately
+
+The active Story retains the exact workflow and test policy pinned when it started. A `sflow/config` push and workspace refresh do **not** repin it. If its inferred runner or environment can be repaired without changing pinned policy, resolve the reported failure, re-run read-only recovery/readiness checks, and then make a reviewed publication attempt.
+
+If the pinned policy itself is invalid, do not edit `workflow.json` or the Story's copied configuration to force progress. The current product needs a governed in-flight policy-repair route for that case; a shared-configuration update alone is not that route. Preserve the Story and its generated code while the repair is decided.
