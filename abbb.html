@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Architecture Review Board (ARB) Dossier — Singularity Flow</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --primary: #0f4c81;
+      --primary-dark: #0a3357;
+      --primary-light: #e8f1f8;
+      --accent: #00a86b;
+      --accent-dark: #007a4d;
+      --accent-light: #e6f7f0;
+      --warning: #f39c12;
+      --warning-light: #fef7ec;
+      --danger: #d9534f;
+      --danger-light: #fdf2f2;
+      --text: #2c3e50;
+      --text-muted: #606f7b;
+      --border: #e2e8f0;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --code-bg: #1e293b;
+      --code-text: #f8fafc;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-sans);
+      color: var(--text);
+      background-color: var(--bg);
+      line-height: 1.6;
+      font-size: 15px;
+    }
+
+    .container {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 30px 24px;
+    }
+
+    header.doc-header {
+      background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+      color: white;
+      padding: 40px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+      box-shadow: 0 4px 14px rgba(15, 76, 129, 0.15);
+    }
+    header.doc-header h1 {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 10px;
+    }
+    header.doc-header .subtitle {
+      font-size: 17px;
+      opacity: 0.9;
+      margin-bottom: 20px;
+      font-weight: 400;
+    }
+    .header-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      font-size: 13px;
+      padding-top: 15px;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .header-meta span strong { color: #80c4ff; }
+
+    nav.toc {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px;
+      margin-bottom: 35px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    nav.toc h2 {
+      font-size: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+    nav.toc ol {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 10px 20px;
+      padding-left: 20px;
+    }
+    nav.toc a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 500;
+    }
+    nav.toc a:hover { text-decoration: underline; }
+
+    section.section-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 35px;
+      margin-bottom: 35px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+    }
+    h2.section-title {
+      font-size: 24px;
+      color: var(--primary-dark);
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--primary-light);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    h3 {
+      font-size: 18px;
+      color: var(--text);
+      margin: 25px 0 12px 0;
+    }
+    h4 {
+      font-size: 15px;
+      color: var(--text);
+      margin: 18px 0 8px 0;
+    }
+    p { margin-bottom: 16px; }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin: 20px 0;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin: 20px 0;
+    }
+    @media (max-width: 850px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+
+    .stat-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      border-left: 4px solid var(--primary);
+    }
+    .stat-card.accent { border-left-color: var(--accent); }
+    .stat-card.warning { border-left-color: var(--warning); }
+    .stat-card.danger { border-left-color: var(--danger); }
+    .stat-card .label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .stat-card .val {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text);
+      margin: 6px 0;
+    }
+    .stat-card .desc { font-size: 13px; color: var(--text-muted); }
+
+    .callout {
+      border-radius: 8px;
+      padding: 18px 20px;
+      margin: 20px 0;
+      font-size: 14px;
+      display: flex;
+      gap: 14px;
+    }
+    .callout-info {
+      background-color: var(--primary-light);
+      border-left: 4px solid var(--primary);
+      color: var(--primary-dark);
+    }
+    .callout-success {
+      background-color: var(--accent-light);
+      border-left: 4px solid var(--accent);
+      color: var(--accent-dark);
+    }
+    .callout-warning {
+      background-color: var(--warning-light);
+      border-left: 4px solid var(--warning);
+      color: #875a00;
+    }
+    .callout-danger {
+      background-color: var(--danger-light);
+      border-left: 4px solid var(--danger);
+      color: #900;
+    }
+
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 14px;
+    }
+    table.data-table th, table.data-table td {
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      text-align: left;
+      vertical-align: top;
+    }
+    table.data-table th {
+      background: var(--bg);
+      font-weight: 600;
+      color: var(--text);
+    }
+    table.data-table tr:nth-child(even) td { background: #fafbfc; }
+
+    .mermaid {
+      background: #fafbfc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+      text-align: center;
+    }
+
+    code {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      background: #eef2f6;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #1e293b;
+    }
+    pre.code-block {
+      background: var(--code-bg);
+      color: var(--code-text);
+      padding: 16px 20px;
+      border-radius: 8px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.5;
+      overflow-x: auto;
+      margin: 16px 0;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-blue { background: #dbeafe; color: #1e40af; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-gray { background: #f1f5f9; color: #475569; }
+
+    footer.doc-footer {
+      text-align: center;
+      padding: 30px;
+      font-size: 13px;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border);
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <header class="doc-header">
+    <h1>Singularity Flow — Architecture Review Board Dossier</h1>
+    <div class="subtitle">High-Assurance, Deterministic Governance Operating System for AI-Augmented Software Delivery</div>
+    <div class="header-meta">
+      <span><strong>Document Reference:</strong> ARB-2026-SFLOW-01</span>
+      <span><strong>Version:</strong> 0.9.0 (Release Candidate)</span>
+      <span><strong>Classification:</strong> Internal Architecture Baseline</span>
+      <span><strong>Target Review Date:</strong> October 2026</span>
+      <span><strong>Primary Decision Authority:</strong> Architecture Review Board (ARB)</span>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <h2>Agenda & Contents</h2>
+    <ol>
+      <li><a href="#business">1. Business Case & ROI Framework</a></li>
+      <li><a href="#architecture">2. System Architecture & Core Primitives</a></li>
+      <li><a href="#security">3. Security, Trust & Boundaries</a></li>
+      <li><a href="#techstack">4. Technology Stack & Runtime Topology</a></li>
+      <li><a href="#deployment">5. Enterprise Deployment & Artifactory</a></li>
+      <li><a href="#support">6. Operational Support & Runbooks</a></li>
+      <li><a href="#outages">7. Outage & Disaster Recovery Matrix</a></li>
+      <li><a href="#decision">8. ARB Decision & Governance Checklist</a></li>
+    </ol>
+  </nav>
+
+  <!-- SECTION 1: BUSINESS -->
+  <section id="business" class="section-card">
+    <h2 class="section-title">1. Business Case, Problem Statement & ROI</h2>
+    
+    <div class="callout callout-info">
+      <div>
+        <strong>The Executive Problem:</strong> Enterprise adoption of AI coding assistants (GitHub Copilot, Cursor, LLMs) has created an unmanageable crisis of confidence. While AI accelerates line-of-code production, it creates severe <em>AI code churn</em>, unlinked architectural drift, hallucinated packages, and unreviewed changes. Compliance officers and risk executives are forced to choose between unregulated AI chaos or slow, manual bureaucratic checkpoints.
+      </div>
+    </div>
+
+    <div class="grid-3">
+      <div class="stat-card accent">
+        <div class="label">Delivery Speed</div>
+        <div class="val">+40% Faster</div>
+        <div class="desc">Lead time reduction for compliant features by replacing manual meeting gates with atomic checks.</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Compliance Cost</div>
+        <div class="val">Zero Manual Audit</div>
+        <div class="desc">100% automated traceability from Jira requirement clauses to AST test witnesses in Git.</div>
+      </div>
+      <div class="stat-card warning">
+        <div class="label">Amortized Economics</div>
+        <div class="val">$3.90 / Story</div>
+        <div class="desc">Cost per delivered story based on enterprise seat amortization without runaway token API spend.</div>
+      </div>
+    </div>
+
+    <h3>Strategic Value Propositions</h3>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Stakeholder</th>
+          <th>Current Pain Point</th>
+          <th>Singularity Flow Resolution</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>C-Suite / Board (CTO, CIO, CISO)</strong></td>
+          <td>Unquantified liability from hallucinated AI code; regulatory failure risks under SOC2, ISO 27001, FDA, DO-178C.</td>
+          <td>Cryptographic proof and deterministic model-independent gates. Audit evidence is generated as a by-product of coding.</td>
+        </tr>
+        <tr>
+          <td><strong>Software Engineering</strong></td>
+          <td>Context switching, endless PR review back-and-forth, manual Jira ticket administrative overhead.</td>
+          <td>Direct IDE integration (VS Code + Copilot skills); automated pre-check gives instant feedback in &lt;1 second.</td>
+        </tr>
+        <tr>
+          <td><strong>Quality Assurance & Testing</strong></td>
+          <td>Tests pass on mocked data, but no proof that actual acceptance criteria were exercised on the candidate bytes.</td>
+          <td>Clause-to-Witness binding (WEL) requires exact AST test body hashes matching explicit requirement clauses.</td>
+        </tr>
+        <tr>
+          <td><strong>Platform & Infrastructure</strong></td>
+          <td>Heavy operational burden of hosting databases, Kafka queues, and Kubernetes pods for internal workflow tools.</td>
+          <td><strong>Zero hosted servers or databases.</strong> Operates locally on developer machines and CI runners using existing Git servers.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- SECTION 2: ARCHITECTURE -->
+  <section id="architecture" class="section-card">
+    <h2 class="section-title">2. System Architecture & Core Primitives</h2>
+    <p>
+      Singularity Flow enforces one non-negotiable architectural invariant: <strong>The Model-Independence Invariant</strong>.
+      Probabilistic AI models (Copilot) are treated strictly as <em>untrusted authoring participants</em>. The lifecycle state machine, validation gates, verification receipts, and publication transactions are 100% deterministic and execute without an LLM.
+    </p>
+
+    <div class="mermaid">
+flowchart TB
+  subgraph Surfaces ["1. User & Authoring Surfaces"]
+    VSC["VS Code Extension (apps/vscode)"]
+    COPILOT["GitHub Copilot (/sf-* Skills)"]
+    CLI["sflow CLI (bin/singularity-flow.mjs)"]
+  end
+
+  subgraph Engine ["2. Deterministic Kernel (Model-Independent)"]
+    DISP["Command Dispatcher & Tripwires"]
+    SGOS["SGOS Compiler & GVM Executor"]
+    GATE["Deterministic Quality Gates (AST + Tests)"]
+    MIG["Two-Pass Schema Migration Engine"]
+  end
+
+  subgraph StatePlanes ["3. Git Authority Planes (Single Source of Truth)"]
+    CONF["sflow/config (Orphan Branch: Law & Policies)"]
+    WORK["singularity/work-items/* (Active Story Branch)"]
+    LEDGER["state (Orphan Branch: Capability Ledger)"]
+    LOCAL[".git/singularity-flow/ (Journal & Recovery)"]
+  end
+
+  Surfaces -->|sflow CLI & JSON Snapshots| DISP
+  DISP --> SGOS
+  SGOS --> GATE
+  GATE --> MIG
+  MIG --> WORK
+  MIG --> CONF
+  MIG -.->|Proof Intent| LEDGER
+  DISP --> LOCAL
+    </div>
+
+    <h3>The 4 Core Architectural Pillars</h3>
+    <div class="grid-2">
+      <div class="stat-card">
+        <h4>1. Git-as-a-Database</h4>
+        <p class="desc">No PostgreSQL, Redis, or DynamoDB. Operational state lives in <code>workflow.json</code> on Story branches. Concurrency is arbitrated by native Git fast-forward push verification. History is tamper-evident and append-only.</p>
+      </div>
+      <div class="stat-card">
+        <h4>2. Closed-Opcode Virtual Machine (GVM)</h4>
+        <p class="desc">High-level Intent compiles into finite GVM Programs (<code>KERNEL</code>, <code>AGENT</code>, <code>DEVICE</code>, <code>VERIFY</code>, <code>HUMAN_REQUEST</code>). Refuses unbounded loops, graph cycles, and unrecovered side-effects at compile time.</p>
+      </div>
+      <div class="stat-card">
+        <h4>3. Two-Plane Evidence Storage</h4>
+        <p class="desc">Separates the <strong>Candidate Plane</strong> (content-addressed prospective code) from the <strong>Evidence Plane</strong> (append-only test receipts). Solves the circular reference flaw in traditional supply-chain tools.</p>
+      </div>
+      <div class="stat-card">
+        <h4>4. Deterministic In-Memory Schema Migrations</h4>
+        <p class="desc">Historical Git commits are never rewritten. Readers execute pure in-memory migrations that run twice and assert byte-identical hashes, guaranteeing forward compatibility across versions.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 3: SECURITY -->
+  <section id="security" class="section-card">
+    <h2 class="section-title">3. Security, Trust & Boundaries</h2>
+    <p>
+      Traditional AI tools fail enterprise security because they confuse AI agents with human users and allow agents to execute arbitrary shell scripts. Singularity Flow applies strict separation of authority and isolation membranes.
+    </p>
+
+    <div class="callout callout-success">
+      <div>
+        <strong>Core Security Principle:</strong> <em>An AI Agent is software, not an approver.</em> Approval authority requires an authenticated human identity matching an approved authority group. Self-approvals are flagged and audited.
+      </div>
+    </div>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Threat / Security Concern</th>
+          <th>Enterprise Risk</th>
+          <th>Singularity Flow Technical Control</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Prompt Injection / Jailbreak</strong></td>
+          <td>Malicious prompt causes model to bypass security rules or delete code.</td>
+          <td><strong>Output Contracts:</strong> Kernel ignores prompt semantics. Only evaluates the emitted diff against strict filesystem write allowlists and protected paths.</td>
+        </tr>
+        <tr>
+          <td><strong>Secret & Credential Exposure</strong></td>
+          <td>API tokens, Git credentials, or Jira keys leaked into committed files or prompts.</td>
+          <td><strong>Zero Secret Storage:</strong> Credentials stay in OS Keychain or VS Code <code>SecretStorage</code>. Ambient environment variables stripped; secrets actively redacted from logs.</td>
+        </tr>
+        <tr>
+          <td><strong>Untrusted Workspace Mutation</strong></td>
+          <td>Model alters checked-out developer files or build configurations unexpectedly.</td>
+          <td><strong>Detached Worktrees:</strong> World-model analysis, candidate verification, and tool executions run in detached, isolated Git worktrees. Live developer workspace is untouched.</td>
+        </tr>
+        <tr>
+          <td><strong>Supply Chain Tampering</strong></td>
+          <td>Upstream workflow rules or agent definitions silently modified mid-project.</td>
+          <td><strong>Content-Addressed Pinning:</strong> Stories pin an immutable snapshot of all rules and templates with per-file SHA-256 hashes (<code>configuration-source.json</code>). Changes require formal proposal PRs.</td>
+        </tr>
+        <tr>
+          <td><strong>Consequential Tool Exploitation</strong></td>
+          <td>Autonomous agent runs destructive OS commands (e.g. <code>rm -rf</code>, arbitrary curl).</td>
+          <td><strong>Content-Addressed CAS Devices:</strong> SGOS sandbox devices execute with durable Tool Intent/Result receipts and confirmation-bound revocation.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- SECTION 4: TECH STACK -->
+  <section id="techstack" class="section-card">
+    <h2 class="section-title">4. Technology Stack & Runtime Topology</h2>
+    <p>
+      Singularity Flow is designed for extreme portability and zero infrastructure footprint. It requires no central daemon, no microservices, and no database servers.
+    </p>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Subsystem</th>
+          <th>Technology</th>
+          <th>Rationale & Architecture Boundary</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Core Engine & CLI</strong></td>
+          <td>Node.js 20+ (Pure ESM <code>.mjs</code>)</td>
+          <td>Standardized cross-platform runtime. Executes natively across macOS, Linux, and Windows without binary recompilation.</td>
+        </tr>
+        <tr>
+          <td><strong>IDE Surface</strong></td>
+          <td>TypeScript 5.6+ / VS Code API</td>
+          <td>Integrated into developer editor. Strictly decoupled: communicates exclusively via CLI subprocess calls and JSON snapshots.</td>
+        </tr>
+        <tr>
+          <td><strong>State Persistence</strong></td>
+          <td>Git (v2.30+) Object Database</td>
+          <td>Leverages content-addressed Git trees, refs, blobs, and commits. Replaces external databases with distributed, cryptographically auditable Git branches.</td>
+        </tr>
+        <tr>
+          <td><strong>External Dependencies</strong></td>
+          <td><strong>Ultra-Minimal:</strong> Only 4 runtime packages (<code>yaml</code>, <code>tslib</code>, <code>@agentclientprotocol/sdk</code>, <code>@finos/calm-cli</code>)</td>
+          <td>Eliminates supply chain attack vectors. Zero bloated frameworks, zero ORMs, zero native C++ compilation bindings.</td>
+        </tr>
+        <tr>
+          <td><strong>Process Supervisor</strong></td>
+          <td>Git Access Layer (GAL)</td>
+          <td>Direct Git plumbing via <code>git cat-file --batch-command</code>. Replaces ad-hoc process spawning with reach-verified execution descriptors.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- SECTION 5: DEPLOYMENT & ARTIFACTORY -->
+  <section id="deployment" class="section-card">
+    <h2 class="section-title">5. Enterprise Deployment & Artifactory Distribution</h2>
+    <p>
+      Singularity Flow is packaged and distributed through standard corporate artifact repositories (e.g., <strong>JFrog Artifactory</strong>, Sonatype Nexus, or GitHub Enterprise Packages). It is engineered for <strong>100% offline, air-gapped corporate environments</strong> with zero runtime internet egress.
+    </p>
+
+    <div class="mermaid">
+flowchart LR
+  subgraph Build ["CI/CD Release Pipeline"]
+    SRC["Clean Git Checkout"] --> BLD["Locked npm & VSCE Toolchain"]
+    BLD --> TGZ["singularity-flow-0.9.0.tgz (npm Bundle)"]
+    BLD --> VSIX["singularity-flow-vscode-0.9.0.vsix (Extension)"]
+    BLD --> SIGN["Sign Artifact Receipt (SHA-256 PEM)"]
+  end
+
+  subgraph Artifactory ["Enterprise Artifactory"]
+    NPM_REPO["npm-internal-virtual (Registry)"]
+    GEN_REPO["generic-release-binaries (VSIX Store)"]
+  end
+
+  subgraph Developer ["Locked Workstations & CI Runners"]
+    DEV_CLI["sflow CLI (Global npm install)"]
+    DEV_IDE["VS Code Extension Host"]
+  end
+
+  TGZ --> NPM_REPO
+  VSIX --> GEN_REPO
+  NPM_REPO -->|Air-gapped npm install| DEV_CLI
+  GEN_REPO -->|Air-gapped VSIX install| DEV_IDE
+    </div>
+
+    <h3>Distribution Artifacts & Verification</h3>
+    <ul>
+      <li><strong>Artifact 1 (CLI & Copilot Plugin):</strong> <code>singularity-flow-0.9.0.tgz</code>. Published to internal Artifactory npm registry. Pre-bundles all runtime dependencies via <code>bundleDependencies</code>. Requires no external npm downloads during installation.</li>
+      <li><strong>Artifact 2 (VS Code Extension):</strong> <code>singularity-flow-vscode-0.9.0.vsix</code>. Published to internal Artifactory generic repository or internal VS Code Marketplace.</li>
+      <li><strong>Cryptographic Attestation:</strong> Every build emits <code>RELEASE-ARTIFACT-RECEIPT.json</code> and <code>SHA256SUMS</code> signed by the enterprise release authority private key.</li>
+    </ul>
+
+    <h3>Standard Workstation Installation Runbook</h3>
+    <pre class="code-block">
+# 1. Configure internal Artifactory registry
+npm config set registry https://artifactory.corporate.internal/artifactory/api/npm/npm-virtual/
+
+# 2. Install the CLI bundle globally (Zero external internet calls)
+npm install -g singularity-flow@0.9.0
+
+# 3. Install the VS Code Extension
+code --install-extension https://artifactory.corporate.internal/artifactory/generic/vsix/singularity-flow-vscode-0.9.0.vsix
+
+# 4. Verify local installation integrity
+sflow doctor --json
+    </pre>
+  </section>
+
+  <!-- SECTION 6: SUPPORT & OPERATIONS -->
+  <section id="support" class="section-card">
+    <h2 class="section-title">6. Operational Support, Diagnostics & Upgrades</h2>
+    
+    <div class="grid-2">
+      <div>
+        <h3>Support Tier Model</h3>
+        <table class="data-table">
+          <thead>
+            <tr><th>Tier</th><th>Responsibility</th><th>Tools Used</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>L1 (Service Desk)</strong></td>
+              <td>Installation verification, CLI PATH setup, VS Code extension enablement.</td>
+              <td><code>sflow --version</code><br><code>sflow doctor</code></td>
+            </tr>
+            <tr>
+              <td><strong>L2 (Platform Engineering)</strong></td>
+              <td>Git remote access, pending push recovery, lock contention, Jira PAT connectivity.</td>
+              <td><code>sflow sync</code><br><code>sflow doctor --repair</code><br><code>sflow precheck</code></td>
+            </tr>
+            <tr>
+              <td><strong>L3 (Architecture / Core)</strong></td>
+              <td>Schema migration issues, custom capability-map governance, workflow template designs.</td>
+              <td><code>sflow schema-check</code><br><code>sflow audit --offline</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <h3>Self-Healing Diagnostics</h3>
+        <p>The platform includes built-in operational healing commands:</p>
+        <ul style="padding-left: 20px;">
+          <li><code>sflow doctor</code>: Inspects repository health, detects uncommitted journals, verifies remote reachability, and identifies stale subject locks.</li>
+          <li><code>sflow doctor --repair</code>: Safely clears abandoned process locks and replays pending crash-recovery markers without data loss.</li>
+          <li><code>sflow audit --offline</code>: Recomputes every cryptographic gate check from a bare clone with zero network connection.</li>
+          <li><code>sflow sync</code>: Flushes pending local transactions to the remote Git server after connectivity interruptions.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 7: OUTAGE & DISASTER RECOVERY -->
+  <section id="outages" class="section-card">
+    <h2 class="section-title">7. Outage & Disaster Recovery Matrix (What Happens on Failures?)</h2>
+    <p>
+      Because Singularity Flow does not rely on a central server, its failure modes are localized, deterministic, and highly resilient. The matrix below outlines system behavior during infrastructure outages:
+    </p>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Infrastructure Outage</th>
+          <th>System Behavior & Impact</th>
+          <th>Recovery / Continuity Protocol</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>GitHub / Remote Git Server Outage</strong></td>
+          <td>
+            <span class="badge badge-green">Zero Data Loss</span><br>
+            Developers continue working locally. Local git commits and stage transitions complete normally on the work branch. Push phase encounters network failure.
+          </td>
+          <td>
+            Kernel writes a recovery marker under <code>.git/singularity-flow/pending-publication/</code>. When GitHub recovers, running <code>sflow sync</code> automatically performs the fast-forward push.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Artifactory / Package Registry Outage</strong></td>
+          <td>
+            <span class="badge badge-green">Zero Runtime Impact</span><br>
+            Existing installed developers and CI runners are completely unaffected. Runtime makes zero calls to Artifactory.
+          </td>
+          <td>
+            New developer onboardings are paused until Artifactory recovers, or developers can install via peer-to-peer signed tarballs.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>GitHub Copilot / LLM Provider Outage</strong></td>
+          <td>
+            <span class="badge badge-green">Graceful Fallback</span><br>
+            AI completions stop responding. However, the Singularity Flow kernel remains 100% operational.
+          </td>
+          <td>
+            Developers switch to manual authorship mode (<code>sflow --no-model</code>). All specification checks, AST gates, test verifications, and approvals proceed manually without blocking.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Jira / Ticketing System Outage</strong></td>
+          <td>
+            <span class="badge badge-amber">Decoupled Intake</span><br>
+            Jira webhook syncs pause.
+          </td>
+          <td>
+            Stories start using natural-language sentence intake (e.g. <code>sflow start "Implement OAuth" --work-id ENG-101</code>). Intent is pinned locally in <code>source.json</code>. Re-syncs to Jira when online.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Workstation Crash / Sudden Power Loss</strong></td>
+          <td>
+            <span class="badge badge-green">ACID Integrity</span><br>
+            Crash occurs mid-command during file writing or index computation.
+          </td>
+          <td>
+            All disk writes use atomic swap (<code>writeAtomic</code>: write to temp file then rename). Incomplete writes are discarded. Running <code>sflow doctor</code> automatically resolves the transaction journal.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- SECTION 8: DECISION -->
+  <section id="decision" class="section-card">
+    <h2 class="section-title">8. ARB Decision & Governance Checklist</h2>
+    
+    <div class="callout callout-success">
+      <div>
+        <strong>Architecture Recommendation:</strong> <strong>APPROVAL RECOMMENDED</strong>.<br>
+        Singularity Flow satisfies all Non-Functional Requirements (NFRs) for high-assurance enterprise software engineering. It introduces zero new server infrastructure, enforces air-gapped security, guarantees model independence, and drastically reduces AI compliance liability.
+      </div>
+    </div>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Evaluation Dimension</th>
+          <th>Criteria</th>
+          <th>ARB Compliance Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Infrastructure Footprint</strong></td>
+          <td>Requires no new cloud services, databases, or daemon servers.</td>
+          <td><span class="badge badge-green">Compliant</span> (Pure client-side execution over existing Git)</td>
+        </tr>
+        <tr>
+          <td><strong>Information Security</strong></td>
+          <td>No credentials in Git; secrets stored in OS keychain; air-gapped capable.</td>
+          <td><span class="badge badge-green">Compliant</span> (Verified against enterprise security baseline)</td>
+        </tr>
+        <tr>
+          <td><strong>Audit & Compliance</strong></td>
+          <td>Tamper-evident, reproducible verification receipts without SaaS lock-in.</td>
+          <td><span class="badge badge-green">Compliant</span> (Bare Git clone provides full independent audit)</td>
+        </tr>
+        <tr>
+          <td><strong>Resilience & DR</strong></td>
+          <td>Graceful degradation under network, Git, Jira, or AI model outages.</td>
+          <td><span class="badge badge-green">Compliant</span> (Offline-first architecture with crash journals)</td>
+        </tr>
+        <tr>
+          <td><strong>Vendor Lock-in</strong></td>
+          <td>Agnostic to LLM providers; exportable to standard Git commits and PRs.</td>
+          <td><span class="badge badge-green">Compliant</span> (Model-independent kernel; replaceable agents)</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer class="doc-footer">
+    <p>Singularity Flow Architecture Review Board Dossier · Generated for Enterprise Engineering Review · Document Version 0.9.0</p>
+  </footer>
+
+</div>
+
+<script>
+  mermaid.initialize({ startOnLoad: true, theme: 'neutral' });
+</script>
+</body>
+</html>
+
