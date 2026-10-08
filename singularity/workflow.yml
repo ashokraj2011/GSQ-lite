@@ -164,13 +164,10 @@ planning:
   maxContextBytes: 1048576
 worldModel:
   views:
-    - business
-    - architecture
-    - development
-    - testing
-    - release
-    - operations
-    - security
+    - arch.contracts@4
+    - biz.rules@4
+    - dev.hotspots@4
+    - dev.impact@4
   projections:
     arch.calm:
       enabled: false
@@ -186,7 +183,7 @@ worldModel:
         includeExternalDependencies: direct-architecture-only
   outputDir: singularity/world-model
   historyDir: singularity/world-model-history
-  promptSource: singularity/prompts/worldmodel-builder.md
+  promptSource: builtin
   stateFetchTimeoutMs: 10000
   generation:
     parallel: true
@@ -208,6 +205,12 @@ worldModel:
     mode: append
     maxBytes: 32768
     rules: []
+  format: registered-v4
+  v4:
+    composer: deterministic
+    consumer: developer
+    cachePolicy: reuse-valid
+    legacyAssignments: strict
 architectureIntent:
   enabled: false
   allowedPhases:
@@ -1637,7 +1640,7 @@ phases:
       minimumBytes: 200
     worldModel:
       views:
-        - business
+        - biz.rules
       depth: quick
     clarification:
       mode: required
@@ -1664,7 +1667,7 @@ phases:
       minimumBytes: 300
     worldModel:
       views:
-        - business
+        - biz.rules
       depth: standard
     clarification:
       mode: required
@@ -1692,8 +1695,7 @@ phases:
       minimumBytes: 300
     worldModel:
       views:
-        - architecture
-        - security
+        - arch.contracts
       depth: standard
     clarification:
       mode: required
@@ -1721,10 +1723,8 @@ phases:
       minimumBytes: 400
     worldModel:
       views:
-        - architecture
-        - development
-        - testing
-        - security
+        - arch.contracts
+        - dev.impact
       depth: deep
     clarification:
       mode: required
@@ -1754,8 +1754,7 @@ phases:
       minimumBytes: 250
     worldModel:
       views:
-        - development
-        - testing
+        - dev.impact
       depth: standard
     clarification:
       mode: required
@@ -1783,9 +1782,8 @@ phases:
       minimumBytes: 250
     worldModel:
       views:
-        - architecture
-        - development
-        - security
+        - arch.contracts
+        - dev.impact
       depth: standard
     clarification:
       mode: required
@@ -1813,9 +1811,7 @@ phases:
       minimumBytes: 300
     worldModel:
       views:
-        - development
-        - testing
-        - security
+        - dev.impact
       depth: standard
     clarification:
       mode: required
@@ -1844,8 +1840,8 @@ phases:
       minimumBytes: 350
     worldModel:
       views:
-        - business
-        - architecture
+        - biz.rules
+        - arch.contracts
       depth: standard
     clarification:
       mode: required
@@ -1872,8 +1868,8 @@ phases:
       minimumBytes: 500
     worldModel:
       views:
-        - business
-        - architecture
+        - biz.rules
+        - arch.contracts
       depth: standard
     clarification:
       mode: required
@@ -1901,9 +1897,8 @@ phases:
       minimumBytes: 500
     worldModel:
       views:
-        - architecture
-        - development
-        - security
+        - arch.contracts
+        - dev.impact
       depth: deep
     clarification:
       mode: required
@@ -1931,10 +1926,8 @@ phases:
       minimumBytes: 700
     worldModel:
       views:
-        - architecture
-        - development
-        - testing
-        - security
+        - arch.contracts
+        - dev.impact
       depth: deep
     clarification:
       mode: required
@@ -1963,8 +1956,7 @@ phases:
       minimumBytes: 250
     worldModel:
       views:
-        - development
-        - testing
+        - dev.impact
       depth: standard
     clarification:
       mode: when-needed
@@ -1991,9 +1983,7 @@ phases:
       minimumBytes: 300
     worldModel:
       views:
-        - testing
-        - development
-        - security
+        - dev.impact
       depth: standard
       evidence: true
     clarification:
@@ -2022,9 +2012,7 @@ phases:
       minimumBytes: 300
     worldModel:
       views:
-        - testing
-        - development
-        - security
+        - dev.impact
       depth: standard
       evidence: true
     clarification:
@@ -2053,9 +2041,7 @@ phases:
       minimumBytes: 600
     worldModel:
       views:
-        - testing
-        - development
-        - security
+        - dev.impact
       depth: deep
       evidence: true
     clarification:
@@ -2094,10 +2080,8 @@ phases:
         - unplanned work
     worldModel:
       views:
-        - architecture
-        - development
-        - testing
-        - security
+        - arch.contracts
+        - dev.impact
       depth: deep
       evidence: true
     writeScope: artifact-only
@@ -2138,9 +2122,7 @@ phases:
           - Safety and access
     worldModel:
       views:
-        - business
-        - testing
-        - security
+        - biz.rules
       depth: standard
     clarification:
       mode: required
@@ -2176,10 +2158,9 @@ phases:
           - Risks and unknowns
     worldModel:
       views:
-        - architecture
-        - development
-        - testing
-        - security
+        - arch.contracts
+        - dev.hotspots
+        - dev.impact
       depth: deep
     clarification:
       mode: when-needed
@@ -2216,9 +2197,7 @@ phases:
           - Coverage gaps
     worldModel:
       views:
-        - testing
-        - development
-        - security
+        - dev.impact
       depth: deep
       evidence: true
     clarification:
@@ -2273,10 +2252,8 @@ phases:
           - Deviations and residual risk
     worldModel:
       views:
-        - development
-        - testing
-        - architecture
-        - security
+        - arch.contracts
+        - dev.impact
       depth: deep
     clarification:
       mode: when-needed
@@ -2322,9 +2299,7 @@ phases:
           - Final verdict
     worldModel:
       views:
-        - testing
-        - development
-        - security
+        - dev.impact
       depth: deep
       evidence: true
     clarification:
@@ -2410,10 +2385,8 @@ phases:
           - Human decision
     worldModel:
       views:
-        - release
-        - testing
-        - development
-        - security
+        - arch.contracts
+        - dev.impact
       depth: standard
       evidence: true
     clarification:
@@ -2560,7 +2533,7 @@ phases:
     artifactSet: spec-driven-specification
     worldModel:
       views:
-        - business
+        - biz.rules
       depth: standard
     clarification:
       mode: required
@@ -2594,7 +2567,7 @@ phases:
     artifactSet: spec-driven-planning
     worldModel:
       views:
-        - architecture
+        - arch.contracts
       depth: standard
     clarification:
       mode: off
@@ -2616,7 +2589,8 @@ phases:
     artifactSet: spec-driven-verification
     worldModel:
       views:
-        - release
+        - arch.contracts
+        - dev.impact
       depth: quick
       evidence: true
     writeScope: artifact-only
@@ -2641,7 +2615,7 @@ phases:
       task: analyze
     worldModel:
       views:
-        - development
+        - dev.impact
       depth: quick
     writeScope: artifact-only
     approval:
@@ -2663,7 +2637,7 @@ phases:
       task: code
     worldModel:
       views:
-        - development
+        - dev.impact
       depth: quick
     writeScope: source-and-artifact
     approval: none
@@ -2681,7 +2655,7 @@ phases:
       task: analyze
     worldModel:
       views:
-        - testing
+        - dev.impact
       depth: quick
       evidence: true
     writeScope: source-and-artifact
