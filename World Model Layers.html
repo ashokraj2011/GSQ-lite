@@ -1,0 +1,643 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>World Model Layers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a reading column with a sticky table of contents on wide screens; each of the three systems carries its own colour band. */
+:root {
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --fg: #1b2129;
+  --muted: #5a6573;
+  --rule: #d9dee5;
+  --accent: #2b5d8f;
+  --ast: #3a6aa3;
+  --ast-tint: #e6eef8;
+  --wmb: #a8691b;
+  --wmb-tint: #f7ecdc;
+  --kn: #2c7a54;
+  --kn-tint: #e2f1e8;
+  --model: #8a3b8f;
+  --model-tint: #f3e6f4;
+  --warn: #9a5b00;
+  --code-bg: #eef1f5;
+  --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11151b; --surface: #171c24; --fg: #e3e8ee; --muted: #9aa6b4; --rule: #2a323d; --accent: #7fb0e6;
+    --ast: #86b2e6; --ast-tint: #1a2635; --wmb: #e3a95c; --wmb-tint: #2c2216; --kn: #6fcf9b; --kn-tint: #16271f;
+    --model: #d79ad9; --model-tint: #2a1b2b; --warn: #f0b45a; --code-bg: #1e252f; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11151b; --surface: #171c24; --fg: #e3e8ee; --muted: #9aa6b4; --rule: #2a323d; --accent: #7fb0e6;
+  --ast: #86b2e6; --ast-tint: #1a2635; --wmb: #e3a95c; --wmb-tint: #2c2216; --kn: #6fcf9b; --kn-tint: #16271f;
+  --model: #d79ad9; --model-tint: #2a1b2b; --warn: #f0b45a; --code-bg: #1e252f; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 16px; line-height: 1.6; padding-inline: 16px; padding-block: 0 64px; }
+.shell { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 40px; }
+@media (min-width: 1040px) { .shell { grid-template-columns: 220px minmax(0, 1fr); } }
+nav.toc { display: none; }
+@media (min-width: 1040px) {
+  nav.toc { display: block; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; padding-top: 48px; font-size: 13.5px; }
+}
+nav.toc p { font-family: var(--font-display); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; font-size: 11.5px; color: var(--muted); margin: 0 0 10px; }
+nav.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+nav.toc a { color: var(--fg); text-decoration: none; display: flex; gap: 8px; align-items: baseline; }
+nav.toc a:hover, nav.toc a:focus-visible { color: var(--accent); }
+nav.toc .dot { width: 8px; height: 8px; border-radius: 2px; flex: none; transform: translateY(1px); }
+main { min-width: 0; max-width: 820px; }
+header.hero { padding-block: 48px 8px; }
+.eyebrow { font-family: var(--font-display); font-weight: 700; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(34px, 6vw, 52px); line-height: 1.05; letter-spacing: -.01em; margin: 0 0 18px; text-wrap: balance; }
+h2 { font-family: var(--font-display); font-weight: 700; font-size: 28px; line-height: 1.2; margin: 0 0 12px; text-wrap: balance; }
+h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; line-height: 1.3; margin: 32px 0 8px; text-wrap: balance; }
+h4 { font-family: var(--font-body); font-weight: 600; font-size: 15px; margin: 22px 0 6px; }
+p, li { max-width: 68ch; }
+p { margin: 0 0 14px; }
+ul, ol { margin: 0 0 14px; padding-left: 22px; }
+li { margin-bottom: 6px; }
+.lede { font-size: 18.5px; color: var(--fg); }
+.muted { color: var(--muted); }
+a { color: var(--accent); }
+code, .mono { font-family: var(--font-mono); font-size: .88em; }
+code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+section.part { padding-top: 56px; margin-top: 8px; border-top: 1px solid var(--rule); }
+.band { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-display); font-weight: 700; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; margin-bottom: 14px; }
+.band.ast { background: var(--ast-tint); color: var(--ast); }
+.band.wmb { background: var(--wmb-tint); color: var(--wmb); }
+.band.kn { background: var(--kn-tint); color: var(--kn); }
+.band.model { background: var(--model-tint); color: var(--model); }
+.band.neutral { background: var(--code-bg); color: var(--muted); }
+.rules { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin: 22px 0 8px; }
+.rule-card { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 14px 16px; min-width: 0; }
+.rule-card strong { display: block; font-family: var(--font-display); font-size: 15px; margin-bottom: 4px; }
+.rule-card p { margin: 0; font-size: 14.5px; color: var(--muted); }
+.systems { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); margin: 20px 0; }
+.system { border-radius: 10px; padding: 16px; min-width: 0; border-left: 4px solid; background: var(--surface); }
+.system.ast { border-color: var(--ast); }
+.system.wmb { border-color: var(--wmb); }
+.system.kn { border-color: var(--kn); }
+.system h3 { margin: 0 0 6px; font-size: 17px; }
+.system p { margin: 0; font-size: 14.5px; }
+.system .q { font-style: italic; color: var(--muted); margin-bottom: 8px; }
+.table-wrap { overflow-x: auto; margin: 14px 0 20px; border: 1px solid var(--rule); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; line-height: 1.45; }
+th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--rule); }
+th { font-family: var(--font-display); font-weight: 700; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); background: var(--bg); white-space: nowrap; }
+tr:last-child td { border-bottom: none; }
+td code { font-size: 12.5px; }
+.pill { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 999px; white-space: nowrap; }
+.pill.never { background: var(--code-bg); color: var(--muted); }
+.pill.optional { background: var(--model-tint); color: var(--model); }
+.pill.lvl { background: var(--kn-tint); color: var(--kn); font-family: var(--font-mono); }
+.pill.view { background: var(--wmb-tint); color: var(--wmb); font-family: var(--font-mono); }
+.pill.assure { background: var(--ast-tint); color: var(--ast); font-family: var(--font-mono); }
+.where { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); background: var(--code-bg); border-radius: 6px; padding: 8px 10px; margin: 10px 0 18px; overflow-x: auto; }
+.where b { font-family: var(--font-body); font-weight: 600; color: var(--fg); margin-right: 6px; }
+.callout { border-radius: 10px; padding: 14px 16px; margin: 16px 0 20px; background: var(--surface); border: 1px solid var(--rule); }
+.callout.model { border-left: 4px solid var(--model); }
+.callout.warn { border-left: 4px solid var(--warn); }
+.callout p:last-child, .callout ul:last-child { margin-bottom: 0; }
+.callout .label { font-family: var(--font-display); font-weight: 700; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px; display: block; }
+.callout.model .label { color: var(--model); }
+.callout.warn .label { color: var(--warn); }
+.diagram { overflow-x: auto; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 16px; margin: 16px 0 24px; }
+.diagram pre.mermaid { margin: 0; background: transparent; font-family: var(--font-body); }
+.stages { counter-reset: stage; list-style: none; padding: 0; margin: 18px 0; display: grid; gap: 4px; }
+.stages > li { counter-increment: stage; position: relative; padding: 4px 0 4px 44px; max-width: none; }
+.stages > li::before { content: counter(stage); position: absolute; left: 0; top: 4px; width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; background: var(--wmb-tint); color: var(--wmb); font-variant-numeric: tabular-nums; }
+.stages > li > h3 { margin-top: 6px; }
+.numbers { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); margin: 16px 0 22px; }
+.num { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 12px 14px; min-width: 0; }
+.num b { display: block; font-family: var(--font-display); font-size: 22px; font-variant-numeric: tabular-nums; }
+.num span { font-size: 13px; color: var(--muted); }
+details { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 10px 14px; margin: 12px 0; }
+summary { cursor: pointer; font-weight: 600; }
+summary:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--rule); color: var(--muted); font-size: 13.5px; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+html { scroll-behavior: smooth; }
+</style>
+
+<div class="shell">
+  <nav class="toc" aria-label="Contents">
+    <p>Contents</p>
+    <ol>
+      <li><a href="#overview"><span class="dot" style="background:var(--muted)"></span>Overview</a></li>
+      <li><a href="#ast"><span class="dot" style="background:var(--ast)"></span>AST intelligence</a></li>
+      <li><a href="#wmb"><span class="dot" style="background:var(--wmb)"></span>Registered World Model</a></li>
+      <li><a href="#knowledge"><span class="dot" style="background:var(--kn)"></span>Repository knowledge</a></li>
+      <li><a href="#workflow"><span class="dot" style="background:var(--accent)"></span>In the workflow</a></li>
+      <li><a href="#models"><span class="dot" style="background:var(--model)"></span>With and without models</a></li>
+      <li><a href="#gaps"><span class="dot" style="background:var(--warn)"></span>Gaps and next steps</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <header class="hero" id="overview">
+      <p class="eyebrow">Singularity Flow · written from the code at main 054d3fce · 2026-10-09</p>
+      <h1>World Model Layers</h1>
+      <p class="lede">Singularity Flow builds three related pictures of a repository. Each answers a different question. All three are built without a language model; a model, where one is allowed at all, only phrases facts that were already extracted and checked.</p>
+    </header>
+
+    <div class="systems">
+      <div class="system ast">
+        <h3>AST intelligence</h3>
+        <p class="q">What is declared, and what does each call reach?</p>
+        <p>Code facts at three levels of certainty: text, syntax and semantic. Compilers and type checkers resolve calls and overrides.</p>
+      </div>
+      <div class="system wmb">
+        <h3>Registered World Model (v4)</h3>
+        <p class="q">What should an agent know for this phase?</p>
+        <p>Sixteen deterministic extractors turn source into cited facts. Four fixed views are composed from them and published to a state branch.</p>
+      </div>
+      <div class="system kn">
+        <h3>Repository knowledge (L0–L5)</h3>
+        <p class="q">How does this code work, in plain terms?</p>
+        <p>A newcomer's explanation sorted into six levels, from inventory to change risk. Every observed item cites a file and line range.</p>
+      </div>
+    </div>
+
+    <div class="rules">
+      <div class="rule-card"><strong>Guidance, never authority</strong><p>A missing, stale or failed model is left out with a recorded reason and a warning. Nothing blocks, refuses or approves work because of it.</p></div>
+      <div class="rule-card"><strong>Deterministic first</strong><p>Every layer builds with no model. A model may only arrange or phrase facts that already exist; it cannot add one.</p></div>
+      <div class="rule-card"><strong>Evidence on every claim</strong><p>A World Model fact carries its evidence ID, source path and content hash. A knowledge item carries a file, a line range and a hash of those lines.</p></div>
+      <div class="rule-card"><strong>Repository code never runs</strong><p>No build tool, package manager, test, annotation processor or Python interpreter is started to extract anything.</p></div>
+    </div>
+
+    <h3>How the pieces connect</h3>
+    <div class="diagram">
+<pre class="mermaid">
+flowchart LR
+  S["Committed source"] --> A["AST intelligence<br/>text · syntax · semantic"]
+  S --> X["16 deterministic<br/>extractors"]
+  X --> F["Fact ledger<br/>evidence · derivations · facts"]
+  F --> V["4 registered views"]
+  V --> C{"Composer"}
+  C -->|"deterministic (default)"| R["Renderer"]
+  C -->|"model-required"| M["Governed model call"]
+  R --> VAL["22-check validator"]
+  M --> VAL
+  VAL --> P["State branch<br/>+ history"]
+  S --> K["Repository knowledge<br/>L0–L5"]
+  H["Git history<br/>12 months"] --> K
+  A -->|"resolved calls<br/>+ overrides"| K
+  P --> G["Phase prompts<br/>(guidance)"]
+  K --> G
+  K --> E["Plain-words explanations<br/>(optional model)"]
+</pre>
+    </div>
+    <p class="muted">The AST layer feeds repository knowledge and the <code>wm ast</code> commands. The registered World Model has its own extractors and does not read AST facts today; that is one of the gaps listed at the end.</p>
+
+    <h3>At a glance</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Layer</th><th>Purpose</th><th>Strategy</th><th>Model</th></tr></thead>
+        <tbody>
+          <tr><td><span class="pill assure">text</span></td><td>Files, symbols and imports for every language</td><td>Built-in lexical scan; a comment- and string-aware line scanner for Java, Python, Kotlin and Swift</td><td><span class="pill never">never</span></td></tr>
+          <tr><td><span class="pill assure">syntax</span></td><td>Declarations, imports, inheritance from a real parser</td><td>The TypeScript compiler's parser for JS/TS</td><td><span class="pill never">never</span></td></tr>
+          <tr><td><span class="pill assure">semantic</span></td><td>Which declaration each call reaches; what overrides what</td><td>TypeScript type checker, the JDK's javac, bundled Pyright; after an explicit warm-up</td><td><span class="pill never">never</span></td></tr>
+          <tr><td>WM scope and snapshot</td><td>Fix exactly which bytes are described</td><td>Scope manifest plus a clean, hashed Git snapshot of in-scope paths</td><td><span class="pill never">never</span></td></tr>
+          <tr><td>WM facts</td><td>Cited, typed claims about the code</td><td>16 deterministic extractors with permission <code>model: never</code></td><td><span class="pill never">never</span></td></tr>
+          <tr><td>WM views</td><td>Pick the facts each view needs</td><td>Required and optional fact types per view, budgets, typed "unavailable" facts</td><td><span class="pill never">never</span></td></tr>
+          <tr><td>WM composition</td><td>Turn admitted facts into a readable view</td><td>Deterministic renderer by default; a governed model only when <code>model-required</code></td><td><span class="pill optional">optional</span></td></tr>
+          <tr><td>WM validation</td><td>Prove the view says only what the facts say</td><td>22 checks; one narrow layout repair; then the validator runs again</td><td><span class="pill never">never</span></td></tr>
+          <tr><td><span class="pill lvl">L0–L5</span></td><td>Explain the repository to a newcomer or product owner</td><td>Text-outline engine, framework producers, call graph, Git history</td><td><span class="pill never">never</span></td></tr>
+          <tr><td>Knowledge explanations</td><td>Plain-words summaries of journeys and functions</td><td>Model sentences that must cite items and reuse their exact names and numbers</td><td><span class="pill optional">optional</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ================= AST ================= -->
+    <section class="part" id="ast">
+      <span class="band ast">Part 1</span>
+      <h2>AST intelligence</h2>
+      <p>The AST layer answers structural questions about code at a declared level of certainty, called <em>assurance</em>. A fact never claims more assurance than the tool that produced it can give. Results are content-addressed and cached under the repository's Git directory, so a second read of unchanged files is nearly free.</p>
+
+      <h3>The three assurance levels</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Assurance</th><th>Produced by</th><th>What it can say</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pill assure">text</span></td><td>Built-in lexical facts for all languages. The polyglot structural preview (<code>sflow-polyglot-syntax</code>) for Java, Python, Kotlin and Swift.</td><td>Declarations, signatures, nesting, imports, annotations and declared relationships, each with an exact span. The preview scans lines; it does not parse. It cannot satisfy a syntax gate.</td></tr>
+            <tr><td><span class="pill assure">syntax</span></td><td><code>sflow-typescript-syntax</code>: the parser of the TypeScript compiler bundled with Singularity Flow.</td><td>Declarations, imports and inheritance for <code>.js .jsx .mjs .cjs .ts .tsx</code>, with signatures that stop before the body.</td></tr>
+            <tr><td><span class="pill assure">semantic</span></td><td>A compiler or type checker: <code>sflow-typescript</code>, <code>sflow-java</code>, <code>sflow-python-pyright</code>.</td><td><code>calls</code> edges from the declaration a call is in to the declaration it resolves to, and <code>overrides</code> edges from a method to the methods it overrides or implements.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>The semantic packs</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Pack</th><th>Engine</th><th>Warm-up runs</th><th>Left out</th></tr></thead>
+          <tbody>
+            <tr><td><code>sflow-typescript</code><br><span class="muted">JS, TS</span></td><td>Bundled TypeScript 5.9.3 type checker; one compiler Program per project, options from the project's own tsconfig/jsconfig</td><td><code>node --version</code></td><td>Calls into <code>node_modules</code> and declaration files</td></tr>
+            <tr><td><code>sflow-java</code><br><span class="muted">Java</span></td><td><code>JavaCallResolver.java</code> on the machine's JDK 11+ (javac's Compiler Tree API, in memory, empty class path, no annotation processors)</td><td><code>java --version</code>. Maven and Gradle never run.</td><td>Library members (Spring's <code>JpaRepository.save</code>) and generated members (Lombok, Micronaut Data, <code>@Client</code> implementations)</td></tr>
+            <tr><td><code>sflow-python-pyright</code><br><span class="muted">Python</span></td><td>Bundled Pyright 1.1.414 language server over stdio, started with no <code>PATH</code> so it never runs a Python interpreter</td><td><code>node --version</code></td><td>Third-party packages and the standard library</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>How semantic facts are extracted</h3>
+      <ol>
+        <li><strong>Warm-up binds the project.</strong> <code>wm ast warm --semantic --provider PACK --project KIND:ROOT --profile default</code> shows a plan, asks for an exact confirmation phrase, then records the toolchain's identity and the hashes of the project's build files. Nothing semantic runs before this. A file uses the innermost warmed project that contains it, so a parent <code>pom.xml</code> warmed once covers its modules.</li>
+        <li><strong>A stable skeleton comes first.</strong> Semantic facts never invent identities. For JS/TS the syntax and semantic packs share one ID scheme. For Java and Python the compiler names each end of an edge by path, name and the line of that name, and the pack joins that to the preview's declaration ID. An end the preview does not have contributes no edge. On Spring Framework's sources 99.9% of the compiler's answers join.</li>
+        <li><strong>Calls are a graph, not a list of call sites.</strong> One edge per caller and callee, at the first call. Method calls, <code>new</code> or constructor calls and method references count; calls inside lambdas belong to the enclosing method.</li>
+        <li><strong>Overrides record dependency injection.</strong> A call through an interface names the declared method, because the compiler cannot know what gets injected at run time. Java reports every repository method a method overrides, through any supertype. Python resolves each base class with go-to-definition and pairs same-named methods (dunder methods are left out).</li>
+        <li><strong>Work is bounded.</strong> Adapter requests carry at most 200 files and 1 MiB for syntax, 500 files and 2 MiB for semantic packs, with a 2 MiB response budget and a 30-second timeout. A response over budget is split in half and retried, so only a single oversized file can degrade.</li>
+      </ol>
+
+      <div class="numbers">
+        <div class="num"><b>63</b><span>resolved calls on your rule engine, up from 13 name matches</span></div>
+        <div class="num"><b>46 s</b><span>first build of Spring Framework's sources (2,773 files): 37,003 calls, 6,687 overrides</span></div>
+        <div class="num"><b>36 s / 4 s</b><span>cold and cached builds of a 571-file Python stdlib copy: 11,374 calls, 979 overrides</span></div>
+        <div class="num"><b>~90 s / 9 s</b><span>cold and cached builds of Singularity Flow itself (2,333 JS/TS files): ~50,000 edges</span></div>
+      </div>
+
+      <div class="where"><b>Where</b>src/ast-intelligence.mjs · src/ast-adapter-contract.mjs · src/ast-semantic-warm.mjs · src/ast-project-binding.mjs · src/ast-packs/{typescript-core, java-core, JavaCallResolver.java, python-core, semantic-join, polyglot-syntax-core}.mjs</div>
+    </section>
+
+    <!-- ================= WMB ================= -->
+    <section class="part" id="wmb">
+      <span class="band wmb">Part 2</span>
+      <h2>Registered World Model (v4)</h2>
+      <p>The registered World Model is what phases receive as grounding. It belongs to the repository's source, not to any Story: it is built from an exact snapshot, published to a state branch, and read by every Story that wants it. The build is a fixed pipeline of nine stages.</p>
+
+      <ol class="stages">
+        <li>
+          <h3>Scope and source snapshot</h3>
+          <p><strong>Purpose.</strong> Decide exactly which bytes the model describes.</p>
+          <ul>
+            <li>The scope manifest takes <code>worldModel.sourceRoots</code> (everything when unset) and <code>sharedRoots</code>, and always excludes <code>.git</code>, Singularity Flow's own state, <code>singularity/</code>, <code>.github/agents</code>, the Story work-item root and your <code>excludedRoots</code>. Exclusions always win and are matched case-insensitively.</li>
+            <li>In-scope paths must be clean, or the build stops with <code>WMB_SOURCE_SNAPSHOT_REQUIRED</code>. The revision is the last commit that touched in-scope paths, and the snapshot hash covers the scoped file list (path, mode, content hash). Story and metadata commits therefore do not make the model stale.</li>
+            <li>A sealed request and plan bind the source, scope, view and extractor registries, consumer profile, output budget and cache policy. Planning changes nothing.</li>
+          </ul>
+        </li>
+        <li>
+          <h3>Extraction</h3>
+          <p><strong>Purpose.</strong> Turn source into typed, cited facts. Fifteen extractors run in every build and <code>required-fact-coverage</code> is appended last; a seventeenth, <code>legacy-migration-resolution</code>, runs only inside <code>wm migrate</code>. "Ledger only" facts are in the fact ledger (queryable with <code>wm facts</code>, and imports feed the CALM projection) but in none of the four views' type lists. Every extractor is a deterministic module declared with <code>network: none</code>, <code>model: never</code> and <code>writes: derived-store-only</code>, and has a reviewed conformance fixture suite. Its identity includes a hash of the World Model kernel's source, so any change to the kernel is a visible registry change.</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Extractor</th><th>What it reads and how</th><th>Facts</th><th>Feeds</th></tr></thead>
+              <tbody>
+                <tr><td><code>repository-files</code></td><td>Lists every in-scope regular file in the pinned snapshot</td><td>file-exists</td><td><span class="muted">ledger only</span></td></tr>
+                <tr><td><code>language-detection</code></td><td>Maps each file extension to one of 13 languages with a fixed table</td><td>language-detected</td><td><span class="muted">ledger only</span></td></tr>
+                <tr><td><code>symbol-skeleton</code></td><td>Exported top-level JS/TS declarations, with comments and strings masked; a lexical scanner for 11 other languages</td><td>symbol-exists</td><td><span class="muted">ledger only</span></td></tr>
+                <tr><td><code>signature-and-export</code></td><td>One-line declaration grammar per language; the body is stripped and the signature capped at 240 characters</td><td>signature, export</td><td><span class="pill view">arch.contracts</span></td></tr>
+                <tr><td><code>import-dependency</code></td><td>Imports, re-exports, <code>require</code> and side-effect imports; relative imports resolved to in-scope files</td><td>dependency-edge, import-dependency</td><td><span class="pill view">dev.impact</span></td></tr>
+                <tr><td><code>call-reference-edge</code></td><td>Same-file lexical candidates: unique declaration names that are called or referenced in masked source (at most 256 edges per file)</td><td>dependency-edge (partial)</td><td><span class="pill view">dev.impact</span></td></tr>
+                <tr><td><code>interface-contract</code></td><td>Explicit interfaces, traits and protocols; <code>implements</code> and <code>impl X for Y</code>; interface fields; root properties of schema, OpenAPI and AsyncAPI files</td><td>interface, implementation, consumer-dependency, protocol-field, schema-contract</td><td><span class="pill view">arch.contracts</span></td></tr>
+                <tr><td><code>configuration-object</code></td><td>Strict JSON, YAML, TOML and properties parse of known configuration files; top-level keys only, never values</td><td>configuration-object</td><td><span class="muted">ledger only</span></td></tr>
+                <tr><td><code>rule-definition</code></td><td>Named objects under <code>rules</code>, <code>policies</code> or <code>predicates</code> in configuration files, with their <code>if</code>/<code>when</code>/<code>condition</code> fields</td><td>rule-definition, condition-expression</td><td><span class="pill view">biz.rules</span></td></tr>
+                <tr><td><code>test-identity</code></td><td>Test names as each framework declares them: Jest/Vitest, pytest, JUnit, xUnit, Rust, RSpec, PHPUnit</td><td>test-identity</td><td><span class="muted">ledger only</span></td></tr>
+                <tr><td><code>clause-code-binding</code></td><td><code>@clause:</code> and <code>@ac:</code> requirement tags in comments</td><td>clause-binding</td><td><span class="pill view">biz.rules</span></td></tr>
+                <tr><td><code>change-region</code></td><td>Offline zero-context <code>git diff</code> of the scoped commit against its first parent, overlapped with declarations</td><td>changed-symbol, contract-change, structural-impact, test-impact</td><td><span class="pill view">dev.impact</span></td></tr>
+                <tr><td><code>ownership-maintainer-record</code></td><td>Exact <code>CODEOWNERS</code> owner-to-pattern records and how often each owner appears</td><td>maintainer-record, ownership-concentration</td><td><span class="pill view">dev.hotspots</span></td></tr>
+                <tr><td><code>runtime-observation-import</code></td><td>A sealed, self-hashed <code>world-model-inputs/runtime-observations.json</code> you provide</td><td>runtime-frequency</td><td><span class="pill view">dev.impact</span></td></tr>
+                <tr><td><code>human-confirmed-knowledge-import</code></td><td>A glossary file you provide, <code>world-model-inputs/human-confirmed-knowledge.json</code>; text that reads like a prompt instruction is rejected</td><td>business-glossary, business-meaning</td><td><span class="pill view">biz.rules</span></td></tr>
+                <tr><td><code>required-fact-coverage</code></td><td>Runs last. For every required fact type that no extractor supplied, emits a typed unavailable fact</td><td>unavailable facts only</td><td>all four</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </li>
+        <li>
+          <h3>Facts, evidence and derivations</h3>
+          <p><strong>Purpose.</strong> Make every claim checkable later. Each piece of evidence (<code>EV-</code>) names a path in the pinned snapshot and its content hash. Each extractor run is a derivation (<code>DRV-</code>) that binds the extractor version, its implementation hash and its inputs. Each fact (<code>FACT-</code>) is named by a hash of its type, subject, claim, status, assurance and evidence.</p>
+          <p>An unavailable fact has no claim and a typed reason such as <code>NO_REGISTERED_PRODUCER</code> or <code>NO_RUNTIME_EVIDENCE</code>, so "we could not find out" is never confused with "it does not exist".</p>
+        </li>
+        <li>
+          <h3>Per-view selection and admission</h3>
+          <p><strong>Purpose.</strong> Give each view exactly the facts it needs, inside its budget. Each view declares required, optional and required-unavailable fact types. Selection takes one anchor fact per required type and every contradicted fact, then fills the remaining slots round-robin by type up to the view's fact limit. Stale facts are never eligible.</p>
+          <p>The <em>admitted</em> facts are the subset that still fits the view's output budget (1,400 tokens) and the composer's input limit (8,000 tokens). Every fact left out is recorded with the reason <code>output-budget</code> or <code>input-budget</code>.</p>
+        </li>
+        <li>
+          <h3>The four registered views</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>View</th><th>Purpose</th><th>Required facts</th><th>Sections</th></tr></thead>
+              <tbody>
+                <tr><td><span class="pill view">arch.contracts@4</span></td><td>The repository's public contracts and who implements and consumes them</td><td>interface, implementation, consumer-dependency, protocol-field, schema-contract, signature; runtime-guarantee as unavailable</td><td>public contracts · implementations · consumers</td></tr>
+                <tr><td><span class="pill view">biz.rules@4</span></td><td>Registered rules, their conditions and where they live</td><td>rule-definition; business-meaning as unavailable until a person confirms it</td><td>registered rules · conditions and outcomes · rule locations</td></tr>
+                <tr><td><span class="pill view">dev.hotspots@4</span></td><td>Where structure, change and dependencies concentrate</td><td>change-frequency, dependency-degree</td><td>structural · change · dependency concentration</td></tr>
+                <tr><td><span class="pill view">dev.impact@4</span></td><td>What the latest change touched and what it may affect</td><td>changed-symbol, contract-change, dependency-edge; runtime-frequency as unavailable</td><td>changed structure · dependency impact · affected contracts · test impact</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="muted">All four views forbid reading source bodies and referring to other views. Facts are placed in the section that names their type.</p>
+        </li>
+        <li>
+          <h3>Composition</h3>
+          <p><strong>Purpose.</strong> Turn admitted facts into a readable Markdown view.</p>
+          <ul>
+            <li><strong>Deterministic (default).</strong> A renderer writes each admitted fact as its canonical sentence followed by one sorted citation group, such as <code>[F:FACT-…]</code>, in the section for its type. Its output is reproducible byte for byte.</li>
+            <li><strong>Model-required.</strong> A governed model call with no tools receives a pinned prompt: the rules, the citation grammar, the candidate JSON schema, the view contract, the consumer profile, the budget, the scope and the admitted fact packet. It must narrate every admitted fact with its exact canonical claim and may not add facts, IDs, paths or metadata.</li>
+            <li><strong>Model-optional</strong> currently always routes to the deterministic renderer for the four built-in views.</li>
+          </ul>
+        </li>
+        <li>
+          <h3>Validation</h3>
+          <p><strong>Purpose.</strong> Prove the candidate says only what the facts say. Twenty-two deterministic checks run on every candidate:</p>
+          <ul>
+            <li><strong>Shape:</strong> JSON, schema, view identity, registered title, required sections, section order, no unregistered sections, word budgets, total output.</li>
+            <li><strong>Faithfulness:</strong> each factual unit is exactly the canonical sentences plus one citation group; no unknown or invented IDs; every path- or symbol-like token is registered and admitted; the model route cites every admitted fact.</li>
+            <li><strong>No strengthening:</strong> an unavailable fact cannot become "does not exist", a partial one cannot become "all" or "complete", and assurance can never be upgraded.</li>
+            <li><strong>Boundaries:</strong> required and required-unavailable facts present, contradictions surfaced, scope respected, no source-body access, no cross-view references, kernel metadata intact.</li>
+          </ul>
+          <p>On the model route, one narrow layout repair is allowed: citation groups split across sentences may be merged when every cited fact is admitted and the text is exactly the canonical sentences. The full validator then runs again.</p>
+        </li>
+        <li>
+          <h3>Materialization, cache and publication</h3>
+          <ul>
+            <li>After validation the kernel adds a header of hashes, a canonical JSON facts block and a stamp (source commit, view hash, prompt hash, execution unit, model, and <code>assurance: validated-derived-view</code>).</li>
+            <li>The cache key combines 12 identities: source, scope, view version and contract, fact ledger, consumer profile, composer, schema, validator, budget and execution profile. Under <code>reuse-valid</code> a cache hit is revalidated before it is reused.</li>
+            <li>Publication replaces <code>singularity/world-model/</code> in one compare-and-swap commit on the state branch; application branches are untouched. A recovery marker is written first, so a failed push resumes with <code>wm recovery publish</code> and no new extraction or model call.</li>
+            <li>At Story creation each phase's views are pinned to exact history for that Story. A miss records an unavailable pin; Story start never builds anything.</li>
+          </ul>
+        </li>
+        <li>
+          <h3>Consumption by phases</h3>
+          <ul>
+            <li>A phase gets the views assigned to it, falling back to its agent's views. It receives the pinned packet when the pin can be re-proved; otherwise the current published projection; otherwise nothing, with a reason code.</li>
+            <li>The World Model section is optional in the prompt budget. If it does not fit it is dropped whole and recorded as <code>WMP_GROUNDING_OMITTED_BY_BUDGET</code>.</li>
+            <li>Grounding is <code>off</code> or <code>warn</code>; an old <code>enforce</code> setting acts as <code>warn</code>. A stale model warns; it never blocks.</li>
+            <li>A CALM architecture projection (<code>arch.calm@1</code>) is built from import, interface and schema facts without a model and validated with the CALM CLI. A Story's architecture intent is checked against it and only ever warns.</li>
+          </ul>
+        </li>
+      </ol>
+
+      <h3>Depth and materialization settings</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Setting</th><th>Values</th><th>Effect</th></tr></thead>
+          <tbody>
+            <tr><td>Build depth</td><td>quick · standard · deep</td><td>Part of the consumer profile: changes cache identity, staleness and the model prompt. The deterministic renderer ignores it.</td></tr>
+            <tr><td>Consumption tier (pins)</td><td>brief · full</td><td>quick gives brief packets (up to 8 KiB); standard gives the first phase view in full (up to 64 KiB) and the rest brief; deep gives full.</td></tr>
+            <tr><td><code>materialization.publish</code></td><td>governed · local</td><td>A local build is a private rehearsal and cannot ground lifecycle phases.</td></tr>
+            <tr><td><code>materialization.confirmation</code></td><td>prompt · automatic</td><td>Automatic builds require the deterministic composer and light depth, and never replace stale or divergent authority.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="where"><b>Where</b>src/world-model/{service, runtime, plan}.mjs · scope/ · source/snapshot.mjs · registry/{extractors, views}.mjs · extract/{runner, selection}.mjs · extract/adapters/ · compose/{candidate, pinned-core}.mjs · validate/candidate.mjs · publish/ · history/ · projections/calm/ · docs/WORLD-MODEL-BUILDER-V4.md</div>
+    </section>
+
+    <!-- ================= KNOWLEDGE ================= -->
+    <section class="part" id="knowledge">
+      <span class="band kn">Part 3</span>
+      <h2>Repository knowledge (L0–L5)</h2>
+      <p>Repository knowledge (<code>wm knowledge</code>) explains how the code works to someone new to it, including a product owner. Each level answers one question. A level is <em>ready</em>, <em>thin</em> or <em>insufficient</em>, and each status comes with its reason.</p>
+
+      <h3>Inputs</h3>
+      <ul>
+        <li><strong>The committed tree at HEAD</strong>, never working files. Code under <code>worldModel.sourceRoots</code>, excluding build output, generated files and Singularity Flow's own state. Limits: 4,000 code files, 512 KB per file, 48 MB in total. A larger repository is split into areas you choose with <code>--area</code>.</li>
+        <li><strong>Git history</strong>: up to 2,000 non-merge commits from the last 12 months, for change counts and co-change.</li>
+        <li><strong>Approved requirements</strong>: approved Markdown phase artifacts whose bytes still match their approval hash. Uploaded documents, Jira text and drafts are not read.</li>
+        <li><strong>Compiler-resolved calls</strong> from the AST layer, once a semantic pack is warmed.</li>
+      </ul>
+
+      <h3>The engine</h3>
+      <p>Files are grouped into areas of about 150 files. An analysis engine reads each area as text: a regex outline of declarations with extents from braces or indentation, then four lenses. <em>Concepts</em> classify modules into layers and score domain words. <em>Entities</em> find data shapes. <em>Flow</em> finds entry points, calls and effects. <em>Logic</em> builds each function's decision tree. Framework producers add what the engine does not know: build commands, routes, data classes, HTTP clients, configuration keys and test cases. No language service and no model is involved.</p>
+
+      <h3>The six levels</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Level</th><th>Question</th><th>Items</th><th>How they are found</th><th>Ready when</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pill lvl">L0</span><br>Inventory</td><td>What is here, and how do I build and test it?</td><td>language, manifest, command</td><td>File counts per language; one item per manifest; test and build commands from npm, Maven, Gradle, pytest, Go and .NET manifests</td><td>There is application source</td></tr>
+            <tr><td><span class="pill lvl">L1</span><br>Structure</td><td>How is it organized, and where does work come in?</td><td>area, layer, entity, entry-point</td><td>Layers from annotations, names and folders; entities from classes, records, interfaces, data classes and pydantic models; entry points from route annotations (Spring, JAX-RS, Micronaut, .NET, Flask, FastAPI), registrations, listeners, timers, <code>main</code>, UI handlers and Android components</td><td>Areas plus at least one entity or entry point</td></tr>
+            <tr><td><span class="pill lvl">L2</span><br>Behaviour</td><td>What does each function do, and what does it touch?</td><td>decision, sink, error-path</td><td>Each function's decision tree; effects from known storage, file, database, network, queue, log, response and screen APIs; thrown exceptions with their message and HTTP status</td><td>At least one decision and one call edge</td></tr>
+            <tr><td><span class="pill lvl">L3</span><br>Domain</td><td>What does it mean: rules, limits, messages, journeys, tests, requirements?</td><td>rule, limit, message, concept, journey, test-case, untested-rule, drift, requirement, requirement-link</td><td>Each <code>if</code>, ternary, calculation and cap becomes a rule with its condition and outcome; UPPER_CASE constants become limits; journeys walk 3 levels down the call graph from each entry point; tests are matched to what they exercise; requirements link through <code>@clause</code> tags or, as a labelled guess, shared words</td><td>A non-guard rule and a test case</td></tr>
+            <tr><td><span class="pill lvl">L4</span><br>System</td><td>How does it fit with other services and settings?</td><td>external-dependency, configuration</td><td>Outbound HTTP calls; Retrofit, Feign and Micronaut <code>@Client</code> interfaces; configuration keys (secret-looking values withheld); Android permissions; Gradle modules</td><td>Any outbound call, configuration or HTTP entry point</td></tr>
+            <tr><td><span class="pill lvl">L5</span><br>Change</td><td>What does a change touch, and where is change risky?</td><td>hotspot, co-change, impact</td><td>Hotspot score = changes × (1 + complexity/10) × (1 + importers); files that change together in at least 2 commits and half of their history; callers, importers, co-change partners and tests for every function with rules</td><td>History was read and a file changed more than once</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>The call graph</h3>
+      <p>Calls drive L2, journeys, test coverage and impact, so their accuracy matters most.</p>
+      <ul>
+        <li><strong>By name</strong>, without a warmed pack: a call is linked only when exactly one repository function of that name fits the receiver. The edge is labelled <code>by-name</code>.</li>
+        <li><strong>Resolved</strong>, with a warmed pack: compiler answers replace a file's name matches. A call to an interface or base method also reaches every override, marked <code>via: override</code>. This is how a Spring or Micronaut controller's call to an injected <code>OrderService</code> reaches <code>OrderServiceImpl</code>, and a FastAPI route reaches each implementation of an abstract service.</li>
+        <li>Metrics report <code>callsResolved</code>, <code>callsMatchedByName</code> and which packs resolved them.</li>
+      </ul>
+
+      <h3>Citations, review and prompts</h3>
+      <ul>
+        <li><strong>Citations.</strong> Every observed item cites a path, a line range and a hash of those exact lines; building one without a citation fails. Derived items (concepts, hotspots, co-change, impact) may have none. Item IDs are stable across builds, and <code>invalidCitations</code> re-hashes every citation.</li>
+        <li><strong>Human review.</strong> <code>wm knowledge confirm|correct|reject</code> writes to <code>docs/knowledge/confirmations.yml</code>, which is committed with the code. A review is bound to the hash of the lines it cites, so it goes stale when the code moves and asks to be reviewed again.</li>
+        <li><strong>Prompt slice.</strong> With <code>worldModel.knowledge.prompt: slice</code>, a phase prompt gets the items related to the Story's title, description and acceptance criteria, in a role-specific section order, within <code>maxBytes</code> (8 KiB by default). Composing it never calls a model.</li>
+        <li><strong>Benchmarks.</strong> Four fixture repositories (React shop, Spring orders, Android notes, FastAPI orders) list the items a reviewer expects. Tests require at least 90% recall on the shop and 100% on the others.</li>
+      </ul>
+
+      <div class="where"><b>Where</b>src/knowledge/{source, analyze, producers, items, resolved-calls, requirements, store, confirm, prompt, explain}.mjs · src/code-intelligence/generated/code-explainer-{model, lenses}.mjs · docs/KNOWLEDGE-MODEL.md</div>
+    </section>
+
+    <!-- ================= WORKFLOW ================= -->
+    <section class="part" id="workflow">
+      <span class="band neutral">Part 4</span>
+      <h2>In the workflow</h2>
+      <p>The World Model is built once per source change and read by every Story. Each phase asks for the views that match its job, at a depth that fits it, and gets a role-specific slice of repository knowledge beside them.</p>
+
+      <h3>How it is wired</h3>
+      <ol class="stages">
+        <li><h3>Configure</h3><p><code>worldModel.views</code> lists the enabled views (all four in the packaged workflow). Each phase sets <code>worldModel: {views, depth}</code>. Each agent's Markdown names its own views in <code>sflow-world-model-views</code>; a phase without views falls back to its agent's, or both are combined when <code>worldModel.agentViews</code> is <code>union</code>.</p></li>
+        <li><h3>Build and publish</h3><p>The packaged setting is <code>materialization.mode: explicit</code> with <code>confirmation: prompt</code>: someone runs <code>sflow wm plan</code> then <code>sflow wm build</code>, reviews the plan and confirms it. The views are published to the state branch for every Story to share. Repository knowledge builds on demand and caches per commit; semantic packs are warmed once per project.</p></li>
+        <li><h3>Story start pins history</h3><p>When a Story is created, each phase's views are pinned to the exact published history for that Story, so a later rebuild cannot change what an in-flight Story was grounded on. If nothing is published yet, the pin is recorded as unavailable and the Story starts anyway.</p></li>
+        <li><h3>Each phase prompt</h3><p>When a phase prompt is composed (<code>sflow next</code>, the <code>/sf-*</code> skills, or <code>wm compose</code>), it gets the pinned view packet when the pin can be re-proved, otherwise the current published views, otherwise nothing with a recorded reason. Repository knowledge adds an 8 KiB slice focused on the Story's title, description and acceptance criteria, ordered for the phase's reader: <em>product</em> for intake and specification, <em>architect</em> for design and planning, <em>tester</em> for verification and conformance, <em>developer</em> otherwise. Both sections are optional in the prompt budget and dropped whole if they do not fit.</p></li>
+        <li><h3>Checks that only warn</h3><p>Grounding verification, staleness and the architecture-intent check against the CALM projection report warnings in receipts. None of them stops, refuses or approves a phase.</p></li>
+      </ol>
+
+      <h3>What each phase gets, and why it helps</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Phase</th><th>Packaged workflows</th><th>Views and depth</th><th>Knowledge reader</th><th>Benefit</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Intake, requirements, specification</strong></td><td>feature, bugfix, chore, spec-driven, reference-driven, quick-fix, classic</td><td><span class="pill view">biz.rules</span> quick/standard</td><td>product</td><td>Requirements are drafted against the rules and conditions the product already enforces and the requirement tags already in code, so the agent can point out duplicates and conflicts, use the product's own terms, and ask grounded clarifying questions.</td></tr>
+            <tr><td><strong>Design, planning</strong></td><td>feature, spec-driven, reference-driven, benchmarking</td><td><span class="pill view">arch.contracts</span> standard</td><td>architect</td><td>The design starts from the real public contracts, their implementations and their consumers. Before changing an interface the agent sees who uses it. The architecture intent is checked against the CALM projection, as warnings.</td></tr>
+            <tr><td><strong>Design intake and inventory (Figma mobile)</strong></td><td>figma-mobile</td><td><span class="pill view">biz.rules</span> <span class="pill view">arch.contracts</span></td><td>product, architect</td><td>Screens are mapped onto existing rules and contracts instead of being designed from scratch.</td></tr>
+            <tr><td><strong>Implementation spec, fix design, component mapping, mobile spec</strong></td><td>feature, bugfix, figma-mobile</td><td><span class="pill view">arch.contracts</span> <span class="pill view">dev.impact</span> deep</td><td>architect or developer</td><td>The spec can name the exact files, symbols, contracts and dependents that will change, and the tests already touching them, at the deepest tier.</td></tr>
+            <tr><td><strong>Reproduction, fix spec</strong></td><td>bugfix</td><td><span class="pill view">dev.impact</span> standard</td><td>developer</td><td>The latest structural change, its dependency edges and its test impact narrow down where a regression came from.</td></tr>
+            <tr><td><strong>Implementation, implement, convergence</strong></td><td>all code workflows</td><td><span class="pill view">dev.impact</span></td><td>developer</td><td>The agent knows what depends on the code it edits, which tests cover it, and which rules and limits must keep holding. With a warmed pack, knowledge also shows the implementation behind an injected interface.</td></tr>
+            <tr><td><strong>Verification, testing, verify, visual verification</strong></td><td>all code workflows</td><td><span class="pill view">dev.impact</span></td><td>tester</td><td>Testing targets the changed structure and its impact set. Knowledge adds the rules no test reaches and tests whose wording contradicts a rule.</td></tr>
+            <tr><td><strong>Conformance</strong></td><td>feature, bugfix, chore, figma-mobile, classic, benchmarking</td><td><span class="pill view">arch.contracts</span> <span class="pill view">dev.impact</span> deep</td><td>tester</td><td>The delivered change is checked against the contracts it should honour and the impact it was planned to have.</td></tr>
+            <tr><td><strong>Release</strong></td><td>spec-driven, reference-driven</td><td><span class="pill view">arch.contracts</span> <span class="pill view">dev.impact</span> quick</td><td>developer</td><td>Contract changes and their consumers are listed for release notes and breaking-change review.</td></tr>
+            <tr><td><strong>POC impact analysis</strong></td><td>poc-workflow</td><td><span class="pill view">arch.contracts</span> <span class="pill view">dev.hotspots</span> <span class="pill view">dev.impact</span> deep</td><td>developer</td><td>The only packaged phase that also asks where change concentrates; today that view is mostly unavailable analysis.</td></tr>
+            <tr><td><strong>Demo, document and POC-lite phases</strong></td><td>demo-*, document-test-repair, poc-lite</td><td>none</td><td>by phase name</td><td>Deliberately run without World Model views to stay quick and cheap.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Benefits across the whole lifecycle</h3>
+      <ul>
+        <li><strong>Grounded instead of guessed.</strong> Agents start from cited facts about the actual code rather than from what a model assumes a typical repository looks like.</li>
+        <li><strong>Small and predictable context.</strong> A view is capped at 1,400 output tokens and the knowledge slice at 8 KiB by default, far less than reading the files the facts came from.</li>
+        <li><strong>The same picture for every agent and phase.</strong> One published build on the state branch, pinned per Story, so the product owner's intake and the tester's verification describe the same code.</li>
+        <li><strong>Auditable.</strong> Every sentence traces to a fact ID or a file and line range, and prompt receipts record which views and which slice a phase received.</li>
+        <li><strong>Cheap and offline.</strong> Building needs no model and no network; deterministic views and knowledge are reproducible and cached.</li>
+        <li><strong>Never in the way.</strong> A missing, stale or dropped section is a warning, so a repository without a World Model runs its whole lifecycle.</li>
+      </ul>
+
+      <div class="callout warn">
+        <span class="label">Where the benefit is smaller today</span>
+        <ul>
+          <li><code>dev.impact</code> describes the latest committed change in scope relative to its parent, and its dependency edges are lexical. A Story's own in-progress diff and compiler-resolved calls reach the agent through repository knowledge, not through this view.</li>
+          <li><code>dev.hotspots</code> is mostly typed "unavailable" facts, so the one phase that asks for it gets little from it.</li>
+          <li>The <code>evidence: true</code> flag on verification phases is recorded in the grounding plan but does not change which facts the current view path delivers.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ================= MODELS ================= -->
+    <section class="part" id="models">
+      <span class="band model">Part 5</span>
+      <h2>With and without models</h2>
+      <p>A model appears in exactly two places, and both are optional. Everywhere else a model is forbidden by design: the World Model extractors declare <code>model: never</code>, and the AST packs, the knowledge build, prompt slices and the CALM projection contain no model call.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th></th><th>World Model composition</th><th>Knowledge explanations</th></tr></thead>
+          <tbody>
+            <tr><td><strong>When</strong></td><td>Only with <code>--composer model-required</code> or <code>worldModel.v4.composer: model-required</code></td><td>Only <code>wm knowledge explain</code></td></tr>
+            <tr><td><strong>The model receives</strong></td><td>Pinned rules, citation grammar, candidate schema, view contract, consumer profile, budget, scope and the admitted fact packet. No tools.</td><td>Up to 24 subjects (the repository, journeys, the functions with the most rules), each with up to 14 items as compact JSON and a short excerpt of the first citation. Excerpts that look like secrets are withheld.</td></tr>
+            <tr><td><strong>It may produce</strong></td><td>A candidate view that narrates every admitted fact with its exact canonical claim and one citation group per unit</td><td>At most 6 sentences per subject, each listing the item IDs it rests on</td></tr>
+            <tr><td><strong>How the output is checked</strong></td><td>The same 22 checks as the deterministic route, after at most one layout repair. Nothing invented, omitted or strengthened survives.</td><td>A sentence is dropped if it cites nothing, cites outside its subject, runs past 60 words, judges the code, or uses a name, number or quote that its cited items do not contain. Kept sentences are labelled <em>inferred</em>.</td></tr>
+            <tr><td><strong>Without a model</strong></td><td>The deterministic renderer is the default and produces a complete, validated view. If a model is required and unavailable, that view is refused with a typed reason, its sibling views still publish, and extracted facts are kept.</td><td>Views render without the "In plain words" section. <code>--dry-run</code> prints the exact prompt that would be sent.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout model">
+        <span class="label">The model's role</span>
+        <p>In both places the model works only as a writer of facts that already exist. Extraction, selection, citation and validation decide what is true. A failed or missing model removes prose; it never removes facts and never blocks a phase. The model that runs a Story phase is a consumer of these layers, never a producer of them.</p>
+      </div>
+    </section>
+
+    <!-- ================= GAPS ================= -->
+    <section class="part" id="gaps">
+      <span class="band neutral">Part 6</span>
+      <h2>Gaps and next steps</h2>
+      <p>These come from reading the code, not from the documentation. Items marked <em>unverified</em> were inferred from the code and not reproduced.</p>
+
+      <h3>Thin coverage in the World Model views</h3>
+      <ul>
+        <li><strong><code>dev.hotspots</code> is mostly "unavailable".</strong> No extractor produces change-frequency, dependency-degree, complexity-metric or incident-mapping, so the view reports typed unavailable facts; only CODEOWNERS concentration is real data. Repository knowledge already computes churn, complexity and importers for its L5 hotspots, and that logic could feed this view.</li>
+        <li><strong>World Model call edges are lexical.</strong> <code>call-reference-edge</code> finds same-file candidates and marks them partial. The compiler-resolved calls and overrides from the AST packs reach repository knowledge but not <code>dev.impact</code>. Feeding them in is the largest accuracy gain available.</li>
+        <li><strong>Runtime and contradiction facts need input.</strong> Runtime guarantees and frequencies come only from an observations file you supply, and no extractor produces contradicted facts yet, so the contradiction checks have nothing to work on.</li>
+        <li><strong><code>model-optional</code> never uses a model</strong> for the four built-in views; it behaves like <code>deterministic</code>.</li>
+      </ul>
+
+      <h3>Repository knowledge</h3>
+      <ul>
+        <li>Logic is built for at most 240 functions per area, test files included, so a large area can lose rules for its later functions (<em>unverified</em>).</li>
+        <li>Four declared item kinds are never produced: module-dependency, call, test-coverage and interface. Their content lives in the graph and in relations instead.</li>
+        <li>A build merged from several areas drops the resolved-call metrics from its summary.</li>
+      </ul>
+
+      <h3>Documentation that lags the code</h3>
+      <ul>
+        <li>The builder doc mentions 20 validation checks; the code has 22.</li>
+        <li><code>worldModel.v4.depth</code> is read by the builder but rejected by configuration validation, so depth comes only from <code>--depth</code>, the phase or <code>materialization.depth</code>.</li>
+        <li>A phase built at <code>deep</code> may be compared against a <code>standard</code> identity and reported stale (<em>unverified</em>).</li>
+        <li>Setting <code>worldModel.allowedSubjects</code> may reject the coverage and human-confirmed facts, whose subject kinds it does not allow (<em>unverified</em>).</li>
+        <li>The knowledge benchmark table lists 20 expected items for Android notes and 17 for FastAPI orders; the fixture files hold 17 and 16.</li>
+      </ul>
+
+      <div class="callout warn">
+        <span class="label">Suggested order</span>
+        <ul>
+          <li>Feed AST <code>calls</code> and <code>overrides</code> into the World Model as <code>dependency-edge</code> facts, so <code>dev.impact</code> sees resolved calls and injected implementations.</li>
+          <li>Produce change-frequency and dependency-degree facts from Git history and the import graph, so <code>dev.hotspots</code> carries data.</li>
+          <li>Fix the documentation drift and test the two <em>unverified</em> configuration paths.</li>
+        </ul>
+      </div>
+    </section>
+
+    <footer>
+      Written from the source of Singularity Flow at main <span class="mono">054d3fce</span> on 2026-10-09. File paths are relative to the repository root. Measurements come from local runs on scratch copies.
+    </footer>
+  </main>
+</div>
+
+<!--claude-mermaid-runtime-begin:3477-->
+<style>.mermaid-diagram{margin-block:4px}.mermaid-diagram svg{display:block;margin:0 auto;max-width:100%;height:auto}</style>
+<script src="/_runtime/mermaid-11.16.1.min.js"></script>
+<script>(function(){
+var CFG={"palettes":{"light":{"surface":"#f4efe4","text":"#42392e","line":"#8a7f6d","border":"#7a6c52","bg":"#fffdf8"},"dark":{"surface":"#262b34","text":"#f2f3f5","line":"#a8adb8","border":"#9aa4b8","bg":"#1f232b"}}};
+if(typeof mermaid==='undefined')return;
+var pres=Array.prototype.slice.call(document.querySelectorAll('pre.mermaid')).filter(function(p){if(p.hasAttribute('data-claude-mermaid-claimed'))return false;p.setAttribute('data-claude-mermaid-claimed','1');return true;});
+if(!pres.length)return;
+var mq=window.matchMedia?window.matchMedia('(prefers-color-scheme: dark)'):null;
+var root=document.documentElement;
+var items=pres.map(function(pre){
+var mount=document.createElement('div');mount.className='mermaid-diagram';
+return {pre:pre,mount:mount,src:pre.textContent||''};
+});
+var seq=0;
+var renderGen=0;
+var lastKey='';
+function pageBg(fallback){
+var els=[document.body,document.documentElement];
+for(var i=0;i<els.length;i++){
+var c=els[i]&&getComputedStyle(els[i]).backgroundColor;
+if(c&&c!=='transparent'&&c!=='rgba(0, 0, 0, 0)')return c;
+}
+return fallback;
+}
+function render(){
+var theme=root.getAttribute('data-theme');
+var dark=theme==='dark'||(!!(mq&&mq.matches)&&theme!=='light');
+var pal=dark?CFG.palettes.dark:CFG.palettes.light;
+var bg=pageBg(pal.bg);
+var key=(dark?'d':'l')+'|'+bg;
+if(key===lastKey)return;
+lastKey=key;
+var gen=++renderGen;
+var font=getComputedStyle(document.body).fontFamily||'sans-serif';
+var nat={useMaxWidth:false};
+mermaid.initialize({
+startOnLoad:false,securityLevel:'strict',theme:'base',
+flowchart:nat,sequence:nat,er:nat,state:nat,class:nat,pie:nat,
+gantt:nat,journey:nat,timeline:nat,gitGraph:nat,mindmap:nat,xyChart:nat,
+quadrantChart:nat,sankey:nat,c4:nat,requirement:nat,block:nat,
+packet:nat,kanban:nat,architecture:nat,radar:nat,
+themeVariables:{background:bg,mainBkg:pal.surface,primaryColor:pal.surface,
+primaryTextColor:pal.text,lineColor:pal.line,primaryBorderColor:pal.border,
+nodeBorder:pal.border,clusterBorder:pal.border,edgeLabelBackground:bg,
+clusterBkg:'rgba(127,127,127,0.07)',titleColor:pal.text,
+darkMode:dark,rowOdd:bg,rowEven:'rgba(127,127,127,0.07)',
+attributeBackgroundColorOdd:bg,attributeBackgroundColorEven:'rgba(127,127,127,0.07)',
+fontSize:'16px',fontFamily:font},
+themeCSS:'.node rect, .node circle, .node polygon, .node path, .cluster rect { stroke-width: 2px; }'
+});
+items.forEach(function(it){
+var id='claude-mermaid-'+seq++;
+mermaid.render(id,it.src).then(function(r){
+if(gen!==renderGen)return;
+var prev=it.pre.previousElementSibling;
+if(prev&&prev.className==='mermaid-diagram'&&prev!==it.mount)return;
+it.mount.innerHTML=r.svg;
+if(!it.mount.parentNode)it.pre.parentNode.insertBefore(it.mount,it.pre);
+it.pre.style.display='none';
+},function(){
+var scratch=document.getElementById(id);
+if(scratch)scratch.parentNode.removeChild(scratch);
+scratch=document.getElementById('d'+id);
+if(scratch)scratch.parentNode.removeChild(scratch);
+if(gen!==renderGen)return;
+if(it.mount.parentNode)it.mount.parentNode.removeChild(it.mount);
+it.pre.style.display='';
+});
+});
+}
+render();
+if(mq&&mq.addEventListener)mq.addEventListener('change',render);
+if(typeof MutationObserver!=='undefined')new MutationObserver(render).observe(root,{attributes:true,attributeFilter:['data-theme']});
+})();</script>
+<!--claude-mermaid-runtime-end-->
+
+</body></html>
