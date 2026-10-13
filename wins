@@ -1,0 +1,15 @@
+$env:SINGULARITY_FLOW_SUBPROCESS_PROBE = '1'
+"node $(node -v); $(git --version); sflow: $((Get-Command singularity-flow).Source)"
+"repo: $(git rev-parse --show-toplevel)"
+try { "Defender real-time: $((Get-MpComputerStatus).RealTimeProtectionEnabled)" } catch { 'Defender: unknown' }
+"node start: $([math]::Round((Measure-Command { node -e 0 }).TotalMilliseconds)) ms"
+"git start: $([math]::Round((Measure-Command { 1..10 | ForEach-Object { git --version > $null } }).TotalMilliseconds / 10)) ms each"
+foreach ($c in @('status', 'nextsteps --for-agent --json')) {
+  $parts = $c -split ' '
+  $sw = [Diagnostics.Stopwatch]::StartNew()
+  $out = & singularity-flow @parts --timings 2>&1
+  $sw.Stop()
+  "== $c : $($sw.ElapsedMilliseconds) ms wall"
+  $out | ForEach-Object { "$_" } | Where-Object { $_ -match '^\[sflow timing\]|^subprocesses:|^\s+\d+x ' } | Select-Object -First 15
+}
+Remove-Item Env:SINGULARITY_FLOW_SUBPROCESS_PROBE
