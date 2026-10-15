@@ -1,0 +1,40 @@
+6. SUPPORT MODEL
+
+Before go-live, the implementing engineering team must define and obtain approval for a formal production support model for Singularity Flow (SGOS). The model identifies ownership, operational responsibilities, and escalation paths for all runtime surfaces, governance engines, and enterprise integrations.
+
+Minimum support-model content expected in the readiness package:
+
+Service ownership and on-call: Named primary and secondary owners for the VS Code Extension UI (My Work & Workflow Studio), GitHub Copilot Skill Bridge (/sf-*), Deterministic Node.js CLI & Governance Engine (sflow), Git Branch & Orphan Capability Ledger Store (sflow/config and sflow/state), and critical integrations (Git Remote Host, Skills & Workflow Marketplace, Jira/Enterprise Trackers, and CI/Quality Toolchains).
+Incident response: Severity definitions (SEV-1 through SEV-4), response time objectives (RTO/SLA), communication channels, and escalation paths to Git platform administration, identity/SSO, AI/Copilot platform, and enterprise integration teams.
+Runbooks: Standard operating procedures for interrupted publication recovery (sflow recover / retained publication replay), orphan sflow/state capability ledger compare-and-swap (CAS) reconciliation, AI/Copilot outage switchover (--no-model manual authorship mode), corrupted local cache/worktree cleanup (sflow doctor), and Git/Jira credential or token/auth failures.
+Monitoring and alerting: Operational health indicators (sflow doctor repository health checks, machine-local redacted structured activity logs under .git/ from error to trace, Flow Impact study telemetry, and CI release-gate status), alert thresholds, ownership, and escalation criteria.
+Change management: Release cadence for the signed CLI/VS Code extension pair (docs/RELEASE-ARTIFACT-HANDOFF.md), versioned workflow configuration updates on sflow/config (with Workflow Studio simulation preview before activation), rollback procedures for runtime packages and repository workflow definitions, and the pre-release validation checklist (npm run poc:release-gate).
+Support handoff: Transition criteria from implementation to steady-state platform support, including Workflow Architect / Tech Lead training, runbook verification, and operations sign-off.
+Outage Impact and Fallback Process
+
+Because Singularity Flow executes its deterministic SDLC governance engine locally inside the developer's repository clone and uses Git itself as the authoritative system of record, there is no centralized control-plane database whose outage can halt local engineering work. Instead, outage scenarios involve degradation of upstream/downstream dependencies (Git Remote Host, GitHub Copilot / LLM provider, Skills & Workflow Marketplace, or Jira). During any external outage, teams can continue authoring code, specifications, and tests locally in Git with full deterministic gate validation.
+
+Expected downstream effects during outage:
+
+Git Remote Host Outage (GitHub / GitLab): Local phase authoring, quality checks, and local commits continue normally, but remote Story branch publication, cross-machine Story discovery, and atomic updates to the shared sflow/state capability ledger are temporarily deferred.
+GitHub Copilot / LLM Service Outage: Automated AI drafting via /sf-* skills is unavailable; however, phase gate evaluation, prompt composition, and verification remain 100% operational via the deterministic CLI and VS Code UI.
+Skills & Workflow Marketplace Outage: Importing new approved workflows, skills, or agent capability packs into Workflow Studio is temporarily unavailable; existing workflows and skills already committed to .singularityflow/ and sflow/config continue to function unaffected.
+Jira / Enterprise Tracker Outage: Automated Epic/Story binding lookups and status synchronization are delayed, requiring local Story operations to proceed against cached workspace bindings until connectivity returns.
+
+Fallback process expectation:
+
+Activate incident process and notify impacted stakeholders (delivery teams, Tech Leads / Approvers, and dependent Git/Copilot/Jira platform teams).
+Switch to deterministic offline / model-free fallback mode where applicable:
+If Copilot / AI is degraded: Continue Story progression using strict --no-model mode (singularity-flow <command> --no-model) and governed manual artifact publication (docs/MODEL-INDEPENDENCE.md).
+If Git Remote is degraded: Continue local Story commits and allow Singularity Flow to record durable work-branch publication intents locally without forcing unverified bypasses.
+Continue delivery-tool execution of work (local Git branch authoring, isolated qualityCommands test execution, and portable review bundle generation) while recording any emergency manual governance sign-offs with commit-bound rationale.
+After service restoration, reconcile deferred state: Run Singularity Flow recovery/synchronization (sflow doctor / retained publication replay) to push queued Story branch commits and reconcile missing sflow/state capability ledger entries from durable work-branch intents.
+Execute the post-recovery verification checklist (sflow doctor, sflow status, and spec-to-code delivery receipt verification) to confirm governance state, tree-hash integrity, and approval chains are consistent across main, Story branches, and sflow/state.
+Publish an incident summary including outage scope, duration, ledger/branch reconciliation actions taken, and any corrective workflow or tooling measures.
+Quick Reference: Component Ownership & Runbook Matrix (Optional Appendix)
+Component / Boundary	Primary Failure Mode	Immediate Fallback	Recovery / Reconciliation Procedure
+GitHub Copilot / LLM Bridge (/sf-*)	Model timeout, rate limit, or service outage	Run CLI/VS Code with --no-model; author markdown/code deliverables manually	Resume /sf-* skills once service recovers; no state reconciliation needed because state is already in Git
+Git Remote & sflow/state Ledger	Push rejected, network outage, or CAS contention on sflow/state	Work is retained safely on local Story branch with a durable ledger intent record	Run governed publication recovery to push the Story branch and replay the ledger append to sflow/state
+VS Code Extension UI (My Work / Workflow Studio)	Extension crash, webview timeout, or IDE issue	Execute identical lifecycle actions via sflow CLI (sflow home, sflow next, sflow submit)	Reload VS Code window; UI re-projects directly from durable disk/Git state
+Skills & Workflow Marketplace	Marketplace unreachable or import validation failure	Use repository-committed workflows and skills in .singularityflow/	Retry import in Workflow Studio once Marketplace is available and preview before applying
+Quality & Verification Gate	Hung test runner, worktree lock, or stale .git/sflow-cache	Fail-fast aborts parallel batch and cleans up isolated worktrees	Run sflow doctor / re-run prepublish to regenerate HMAC-verified verification cache
